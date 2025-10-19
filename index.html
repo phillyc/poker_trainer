@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Range Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Left Navigation Bar -->
+        <nav class="nav-bar">
+            <div class="nav-section">
+                <h3>Actions</h3>
+                <button id="reset-btn" class="nav-button">Clear All</button>
+                <button id="select-all-btn" class="nav-button">Select All</button>
+            </div>
+            
+            <div class="nav-section">
+                <h3>Built-in Presets</h3>
+                <button class="preset-button" data-preset="premium-hands">Premium Hands</button>
+                <button class="preset-button" data-preset="top-20-percent">Top 20%</button>
+                <button class="preset-button" data-preset="HH Btn v Aggro Open">HH Btn v Aggro Open</button>
+            </div>
+            
+            <div class="nav-section">
+                <h3>Save Current Range</h3>
+                <input type="text" id="range-name-input" class="range-input" placeholder="Enter range name..." maxlength="30">
+                <button id="save-range-btn" class="nav-button save-button">Save Range</button>
+            </div>
+            
+            <div class="nav-section">
+                <h3>My Saved Ranges</h3>
+                <div id="saved-ranges-list" class="saved-ranges-list">
+                    <p class="empty-message">No saved ranges yet</p>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="container">
+                <h1>Texas Hold'em Range Trainer</h1>
+                
+                <!-- Mode Toggle Button -->
+                <div class="mode-toggle-container">
+                    <button id="mode-toggle" class="mode-toggle-btn">Switch to Train Mode →</button>
+                </div>
+                
+                <!-- Edit Mode Info -->
+                <div class="info edit-only">
+                    <p>Click to cycle: Fold → Raise → Call → Mix → Fold</p>
+                    <div class="legend">
+                        <span class="legend-item"><span class="legend-box raise"></span> Raise</span>
+                        <span class="legend-item"><span class="legend-box call"></span> Call</span>
+                        <span class="legend-item"><span class="legend-box mix"></span> Mix (Raise/Call)</span>
+                    </div>
+                </div>
+                
+                <!-- Train Mode Info -->
+                <div class="train-info train-only" style="display: none;">
+                    <div id="train-range-info" class="train-range-info">
+                        <!-- Range name and description will be inserted here -->
+                    </div>
+                    <p class="train-instruction">Try to recreate the range from memory, then submit to check your accuracy!</p>
+                </div>
+                
+                <!-- Range Grid -->
+                <div id="range-grid" class="range-grid"></div>
+                
+                <!-- Edit Mode Stats -->
+                <div class="stats edit-only">
+                    <p>Selected: <span id="selected-count">0.0% (Raise: 0.0%, Call: 0.0%, Mix: 0.0%) - 0 / 169</span> hands</p>
+                </div>
+                
+                <!-- Train Mode Controls -->
+                <div class="train-controls train-only" style="display: none;">
+                    <button id="reset-train-btn" class="train-button reset-button">Reset</button>
+                    <button id="submit-train-btn" class="train-button submit-button">Submit</button>
+                </div>
+                
+                <!-- Train Mode Results -->
+                <div id="train-result" class="train-result train-only" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
+

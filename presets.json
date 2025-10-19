@@ -1,0 +1,33 @@
+{
+  "premium-hands": {
+    "name": "Premium Hands",
+    "description": "Top pocket pairs and premium suited broadway cards",
+    "hands": [
+      "AA", "KK", "QQ", "JJ", "TT",
+      "AKs", "AQs", "AJs", "KQs"
+    ]
+  },
+  "top-20-percent": {
+    "name": "Top 20%",
+    "description": "Approximately the top 20% of starting hands",
+    "hands": [
+      "AA", "KK", "QQ", "JJ", "TT", "99", "88", "77",
+      "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s",
+      "KQs", "KJs", "KTs",
+      "QJs", "QTs",
+      "JTs",
+      "AKo", "AQo", "AJo", "ATo",
+      "KQo", "KJo"
+    ]
+  },
+  "HH Btn v Aggro Open": {
+    "name": "HH Btn v Aggro Open",
+    "description": "Hungry Horse Button vs Aggressive Open",
+    "hands": {
+      "raise": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "J9s", "T9s", "AKo", "AQo", "AJo", "ATo", "KQo"],
+      "mix": ["A4s", "A3s", "A2s", "K8s", "K6s", "Q9s", "J8s", "T8s", "98s", "87s", "76s", "65s", "54s", "KJo", "KTo", "66", "55", "44", "33", "22"],
+      "call": []
+    }
+  }
+}
+

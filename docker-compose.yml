@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # TypeScript compiler in watch mode
+  typescript-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: poker-trainer-compiler
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: npm run watch
+    restart: unless-stopped
+    networks:
+      - poker-dev
+
+  # Web server with live reload
+  web-server:
+    image: node:18-alpine
+    container_name: poker-trainer-server
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:8080"
+    command: npx --yes live-server --port=8080 --host=0.0.0.0 --watch=. --entry-file=index.html
+    depends_on:
+      - typescript-compiler
+    restart: unless-stopped
+    networks:
+      - poker-dev
+
+networks:
+  poker-dev:
+    driver: bridge
+

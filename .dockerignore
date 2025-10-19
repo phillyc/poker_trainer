@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Node modules (will be installed in container)
+node_modules
+
+# Build artifacts
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Windows
+*.bat
+
+# Compiled output (will be generated)
+# We actually want to include app.js for reference, so not ignoring it
+

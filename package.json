@@ -1,0 +1,26 @@
+{
+  "name": "poker-range-trainer",
+  "version": "1.0.0",
+  "description": "A simple Texas Hold'em range selection tool for practicing and visualizing poker starting hand ranges",
+  "main": "app.js",
+  "scripts": {
+    "watch": "tsc --watch --target ES6 --lib ES2015,DOM --strict app.ts",
+    "build": "tsc --target ES6 --lib ES2015,DOM --strict app.ts",
+    "dev": "docker compose up",
+    "dev-build": "docker compose up --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "range",
+    "trainer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
+

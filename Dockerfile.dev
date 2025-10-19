@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install TypeScript globally
+RUN npm install -g typescript
+
+# Copy package.json if it exists, or create one
+COPY package*.json ./
+
+# Install dependencies (will use package.json if exists)
+RUN npm install 2>/dev/null || true
+
+# Copy project files
+COPY . .
+
+# Default command (can be overridden in docker-compose)
+CMD ["tsc", "--watch", "--target", "ES6", "--lib", "ES2015,DOM", "--strict"]
+
