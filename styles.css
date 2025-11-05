@@ -914,6 +914,92 @@ h1 {
     color: white;
 }
 
+/* Confirmation Modal */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.confirm-modal-overlay.show {
+    opacity: 1;
+}
+
+.confirm-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.confirm-modal-overlay.show .confirm-modal {
+    transform: scale(1);
+}
+
+.confirm-message {
+    font-size: 1.1em;
+    margin-bottom: 25px;
+    color: #333;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.confirm-btn-ok {
+    background: #28a745;
+    color: white;
+}
+
+.confirm-btn-ok:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.confirm-btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.confirm-btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+.confirm-btn:active {
+    transform: translateY(0);
+}
+
 @media (max-width: 768px) {
     .app-layout {
         flex-direction: column;
@@ -983,6 +1069,22 @@ h1 {
     .toast {
         min-width: auto;
         width: 100%;
+    }
+    
+    .confirm-modal {
+        padding: 20px;
+        max-width: 90%;
+    }
+    
+    .confirm-message {
+        font-size: 1em;
+        margin-bottom: 20px;
+    }
+    
+    .confirm-btn {
+        padding: 10px 20px;
+        font-size: 0.9em;
+        min-width: 80px;
     }
 }
 

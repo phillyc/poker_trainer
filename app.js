@@ -341,7 +341,7 @@ function saveSavedRanges(ranges) {
     }
     catch (error) {
         console.error('Error saving ranges:', error);
-        alert('Failed to save range. Storage may be full or disabled.');
+        showToast('Failed to save range. Storage may be full or disabled.', 'error');
     }
 }
 /**
@@ -349,12 +349,12 @@ function saveSavedRanges(ranges) {
  */
 function saveCurrentRange(name) {
     if (!name.trim()) {
-        alert('Please enter a name for your range.');
+        showToast('Please enter a name for your range.', 'error');
         return;
     }
     const selected = getCurrentSelection();
     if (Object.keys(selected).length === 0) {
-        alert('Please select at least one hand before saving.');
+        showToast('Please select at least one hand before saving.', 'error');
         return;
     }
     const ranges = getSavedRanges();
@@ -366,13 +366,29 @@ function saveCurrentRange(name) {
         timestamp: Date.now()
     };
     if (existingIndex >= 0) {
-        // Update existing range
-        if (confirm(`A range named "${name.trim()}" already exists. Overwrite it?`)) {
-            ranges[existingIndex] = newRange;
-        }
-        else {
-            return;
-        }
+        // Update existing range - use async confirmation
+        showConfirm(`A range named "${name.trim()}" already exists. Overwrite it?`).then((confirmed) => {
+            if (confirmed) {
+                // Get fresh ranges to avoid race conditions
+                const currentRanges = getSavedRanges();
+                const currentIndex = currentRanges.findIndex(r => r.name === name.trim());
+                if (currentIndex >= 0) {
+                    currentRanges[currentIndex] = newRange;
+                }
+                else {
+                    currentRanges.push(newRange);
+                }
+                saveSavedRanges(currentRanges);
+                renderSavedRanges();
+                // Clear input field
+                const input = document.getElementById('range-name-input');
+                if (input) {
+                    input.value = '';
+                }
+                showToast(`Range "${name.trim()}" saved successfully!`, 'success');
+            }
+        });
+        return;
     }
     else {
         // Add new range
@@ -385,7 +401,7 @@ function saveCurrentRange(name) {
     if (input) {
         input.value = '';
     }
-    alert(`Range "${name.trim()}" saved successfully!`);
+    showToast(`Range "${name.trim()}" saved successfully!`, 'success');
 }
 /**
  * Load a saved range
@@ -409,13 +425,15 @@ function loadSavedRange(name) {
  * Delete a saved range
  */
 function deleteSavedRange(name) {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-        return;
-    }
-    const ranges = getSavedRanges();
-    const filtered = ranges.filter(r => r.name !== name);
-    saveSavedRanges(filtered);
-    renderSavedRanges();
+    showConfirm(`Are you sure you want to delete "${name}"?`).then((confirmed) => {
+        if (confirmed) {
+            const ranges = getSavedRanges();
+            const filtered = ranges.filter(r => r.name !== name);
+            saveSavedRanges(filtered);
+            renderSavedRanges();
+            showToast(`Range "${name}" deleted successfully.`, 'success');
+        }
+    });
 }
 /**
  * Convert a saved range to presets.json compatible format
@@ -464,13 +482,13 @@ function copyRangeToClipboard(name) {
         const ranges = getSavedRanges();
         const range = ranges.find(r => r.name === name);
         if (!range) {
-            alert(`Range "${name}" not found.`);
+            showToast(`Range "${name}" not found.`, 'error');
             return;
         }
         try {
             const jsonString = formatRangeForPresets(range);
             yield navigator.clipboard.writeText(jsonString);
-            alert(`Range "${name}" copied to clipboard!\n\nYou can now paste it into presets.json`);
+            showToast(`Range "${name}" copied to clipboard! You can now paste it into presets.json`, 'success');
         }
         catch (error) {
             console.error('Failed to copy to clipboard:', error);
@@ -483,10 +501,10 @@ function copyRangeToClipboard(name) {
             textArea.select();
             try {
                 document.execCommand('copy');
-                alert(`Range "${name}" copied to clipboard!\n\nYou can now paste it into presets.json`);
+                showToast(`Range "${name}" copied to clipboard! You can now paste it into presets.json`, 'success');
             }
             catch (fallbackError) {
-                alert('Failed to copy to clipboard. Please check your browser permissions.');
+                showToast('Failed to copy to clipboard. Please check your browser permissions.', 'error');
             }
             document.body.removeChild(textArea);
         }
@@ -951,6 +969,64 @@ function showToast(message, type) {
     }, 2000);
 }
 /**
+ * Show a confirmation dialog using a modal
+ * Returns a Promise that resolves to true if confirmed, false if cancelled
+ */
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-modal-overlay';
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'confirm-modal';
+        // Create message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'confirm-message';
+        messageDiv.textContent = message;
+        // Create buttons container
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'confirm-buttons';
+        // Create confirm button
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'confirm-btn confirm-btn-ok';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        });
+        // Create cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'confirm-btn confirm-btn-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(false);
+        });
+        // Assemble modal
+        buttonsDiv.appendChild(confirmBtn);
+        buttonsDiv.appendChild(cancelBtn);
+        modal.appendChild(messageDiv);
+        modal.appendChild(buttonsDiv);
+        overlay.appendChild(modal);
+        // Add to DOM
+        document.body.appendChild(overlay);
+        // Trigger animation
+        setTimeout(() => {
+            overlay.classList.add('show');
+        }, 10);
+        // Handle escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', handleEscape);
+                resolve(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    });
+}
+/**
  * Submit training attempt and show results
  */
 function submitTraining() {
@@ -1101,7 +1177,7 @@ function setupNavigation() {
         modeToggle.addEventListener('click', () => {
             if (currentMode === 'edit') {
                 if (Object.keys(getCurrentSelection()).length === 0) {
-                    alert('Please select or load a range first before entering train mode.');
+                    showToast('Please select or load a range first before entering train mode.', 'error');
                     return;
                 }
                 switchMode('train');
