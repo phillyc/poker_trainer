@@ -146,6 +146,28 @@ body {
     text-decoration: underline;
 }
 
+.range-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.copy-range-btn {
+    background: none;
+    border: none;
+    color: #2a5298;
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 0 8px;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.copy-range-btn:hover {
+    color: #1e3c72;
+    transform: scale(1.2);
+}
+
 .delete-range-btn {
     background: none;
     border: none;
@@ -188,6 +210,84 @@ h1 {
     text-align: center;
     margin-bottom: 20px;
     color: #555;
+}
+
+.edit-mode-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.edit-mode-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: 600;
+    border: 2px solid #2a5298;
+    border-radius: 6px;
+    background: white;
+    color: #1e3c72;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-mode-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-mode-btn.active {
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Raise button - red */
+.edit-mode-btn[data-action="raise"].active {
+    background: #dc3545;
+    border-color: #c82333;
+}
+
+.edit-mode-btn[data-action="raise"].active:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Call button - green */
+.edit-mode-btn[data-action="call"].active {
+    background: #28a745;
+    border-color: #218838;
+}
+
+.edit-mode-btn[data-action="call"].active:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+/* Mix button - half red, half green */
+.edit-mode-btn[data-action="mix"].active {
+    background: linear-gradient(to right, #dc3545 0%, #dc3545 50%, #28a745 50%, #28a745 100%);
+    border-color: #856404;
+}
+
+.edit-mode-btn[data-action="mix"].active:hover {
+    background: linear-gradient(to right, #c82333 0%, #c82333 50%, #218838 50%, #218838 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(133, 100, 4, 0.4);
+}
+
+/* Fold button - gray (default) */
+.edit-mode-btn[data-action="fold"].active {
+    background: #6c757d;
+    border-color: #5a6268;
+}
+
+.edit-mode-btn[data-action="fold"].active:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
 }
 
 .legend {
@@ -260,7 +360,7 @@ h1 {
 /* Fold action - gray (default state) */
 .hand-cell.action-fold {
     background-color: #e9ecef;
-    color: #6c757d;
+    color: #333;
     border-color: #ccc;
 }
 
@@ -300,12 +400,8 @@ h1 {
 }
 
 /* Mode Toggle */
-.mode-toggle-container {
-    text-align: center;
-    margin: 20px 0;
-}
-
 .mode-toggle-btn {
+    width: 100%;
     padding: 12px 24px;
     font-size: 1.1em;
     font-weight: 600;
@@ -316,6 +412,7 @@ h1 {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    margin-bottom: 20px;
 }
 
 .mode-toggle-btn:hover {
@@ -502,6 +599,321 @@ h1 {
     }
 }
 
+/* Training Mode Selector */
+.training-mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.train-mode-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: 600;
+    border: 2px solid #2a5298;
+    border-radius: 6px;
+    background: white;
+    color: #1e3c72;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.train-mode-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.train-mode-btn.active {
+    background: #2a5298;
+    color: white;
+    border-color: #1e3c72;
+}
+
+/* Spot Drill Styles */
+.spot-drill-mode {
+    text-align: center;
+}
+
+.poker-table-container {
+    margin: 30px auto;
+    max-width: 600px;
+}
+
+.poker-table {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: linear-gradient(135deg, #0d5d2e 0%, #1a7a3e 100%);
+    border-radius: 50%;
+    border: 8px solid #8b4513;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin: 0 auto;
+}
+
+.seat {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-seat {
+    background: rgba(255, 215, 0, 0.3);
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    position: relative;
+}
+
+.seat-label {
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Position seats around the table in a symmetrical circle */
+/* 8 seats evenly spaced around the oval table */
+.seat-1 {
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: auto;
+}
+
+.seat-2 {
+    top: 18%;
+    right: 18%;
+}
+
+.seat-3 {
+    top: 50%;
+    right: 8%;
+    transform: translateY(-50%);
+}
+
+.seat-4 {
+    bottom: 18%;
+    right: 18%;
+}
+
+.seat-5 {
+    top: 50%;
+    left: 8%;
+    transform: translateY(-50%);
+}
+
+.seat-6 {
+    top: 18%;
+    left: 18%;
+}
+
+.seat-7 {
+    bottom: 18%;
+    left: 18%;
+}
+
+.seat-8 {
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+}
+
+.table-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 120px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-center .current-hand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+    min-height: auto;
+}
+
+/* Card Square Styles */
+.card-square {
+    width: 60px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 2em;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+
+/* Spot Drill Hand Display */
+.spot-drill-hand-display {
+    margin: 30px 0;
+}
+
+.spot-drill-instruction {
+    color: #555;
+    font-size: 1.1em;
+    margin: 15px 0;
+}
+
+.spot-drill-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.spot-action-btn {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    font-weight: 600;
+    border: 2px solid #2a5298;
+    border-radius: 8px;
+    background: white;
+    color: #1e3c72;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.spot-action-btn:hover {
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Raise button - red */
+.spot-action-btn[data-action="raise"]:hover {
+    background: #dc3545;
+    border-color: #c82333;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Call button - green */
+.spot-action-btn[data-action="call"]:hover {
+    background: #28a745;
+    border-color: #218838;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+/* Mix button - half red, half green */
+.spot-action-btn[data-action="mix"]:hover {
+    background: linear-gradient(to right, #dc3545 0%, #dc3545 50%, #28a745 50%, #28a745 100%);
+    border-color: #856404;
+    box-shadow: 0 4px 12px rgba(133, 100, 4, 0.4);
+}
+
+/* Fold button - gray */
+.spot-action-btn[data-action="fold"]:hover {
+    background: #6c757d;
+    border-color: #5a6268;
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.spot-action-btn:active {
+    transform: translateY(0);
+}
+
+.spot-drill-progress {
+    margin: 20px 0;
+    font-size: 1.2em;
+    color: #555;
+    font-weight: 600;
+}
+
+#spot-drill-progress-text {
+    color: #2a5298;
+    font-size: 1.3em;
+}
+
+/* Spot Drill Results */
+.spot-drill-result {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #667eea;
+    text-align: center;
+}
+
+.spot-drill-result h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+}
+
+.spot-drill-result .accuracy {
+    font-size: 2em;
+    font-weight: bold;
+    color: #28a745;
+    margin: 15px 0;
+}
+
+.spot-drill-results-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+    min-width: 250px;
+    text-align: center;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-success {
+    background: #28a745;
+    color: white;
+}
+
+.toast-error {
+    background: #dc3545;
+    color: white;
+}
+
 @media (max-width: 768px) {
     .app-layout {
         flex-direction: column;
@@ -541,6 +953,36 @@ h1 {
     
     .hand-cell {
         font-size: 0.7em;
+    }
+    
+    .poker-table {
+        height: 300px;
+    }
+    
+    .seat {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .table-center .current-hand {
+        font-size: 2.5em;
+    }
+    
+    .spot-action-btn {
+        padding: 12px 20px;
+        font-size: 1em;
+        min-width: 100px;
+    }
+    
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .toast {
+        min-width: auto;
+        width: 100%;
     }
 }
 

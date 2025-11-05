@@ -11,6 +11,11 @@
     <div class="app-layout">
         <!-- Left Navigation Bar -->
         <nav class="nav-bar">
+            <!-- Mode Toggle Button -->
+            <div class="nav-section">
+                <button id="mode-toggle" class="mode-toggle-btn">Switch to Train Mode →</button>
+            </div>
+            
             <div class="nav-section">
                 <h3>Actions</h3>
                 <button id="reset-btn" class="nav-button">Clear All</button>
@@ -19,9 +24,9 @@
             
             <div class="nav-section">
                 <h3>Built-in Presets</h3>
-                <button class="preset-button" data-preset="premium-hands">Premium Hands</button>
-                <button class="preset-button" data-preset="top-20-percent">Top 20%</button>
-                <button class="preset-button" data-preset="HH Btn v Aggro Open">HH Btn v Aggro Open</button>
+                <div id="presets-container" class="presets-container">
+                    <!-- Preset buttons will be dynamically loaded here -->
+                </div>
             </div>
             
             <div class="nav-section">
@@ -43,14 +48,20 @@
             <div class="container">
                 <h1>Texas Hold'em Range Trainer</h1>
                 
-                <!-- Mode Toggle Button -->
-                <div class="mode-toggle-container">
-                    <button id="mode-toggle" class="mode-toggle-btn">Switch to Train Mode →</button>
+                <!-- Training Mode Selector (shown in train mode) -->
+                <div class="training-mode-selector train-only" style="display: none;">
+                    <button id="range-recall-btn" class="train-mode-btn active">Range Recall</button>
+                    <button id="spot-drill-btn" class="train-mode-btn">Spot Drill</button>
                 </div>
                 
                 <!-- Edit Mode Info -->
                 <div class="info edit-only">
-                    <p>Click to cycle: Fold → Raise → Call → Mix → Fold</p>
+                    <div class="edit-mode-buttons">
+                        <button class="edit-mode-btn" data-action="fold">Fold</button>
+                        <button class="edit-mode-btn" data-action="raise">Raise</button>
+                        <button class="edit-mode-btn" data-action="call">Call</button>
+                        <button class="edit-mode-btn" data-action="mix">Mix</button>
+                    </div>
                     <div class="legend">
                         <span class="legend-item"><span class="legend-box raise"></span> Raise</span>
                         <span class="legend-item"><span class="legend-box call"></span> Call</span>
@@ -58,12 +69,55 @@
                     </div>
                 </div>
                 
-                <!-- Train Mode Info -->
-                <div class="train-info train-only" style="display: none;">
+                <!-- Train Mode Info (Range Recall) -->
+                <div class="train-info train-only range-recall-mode" style="display: none;">
                     <div id="train-range-info" class="train-range-info">
                         <!-- Range name and description will be inserted here -->
                     </div>
                     <p class="train-instruction">Try to recreate the range from memory, then submit to check your accuracy!</p>
+                    <div class="edit-mode-buttons">
+                        <button class="edit-mode-btn" data-action="fold">Fold</button>
+                        <button class="edit-mode-btn" data-action="raise">Raise</button>
+                        <button class="edit-mode-btn" data-action="call">Call</button>
+                        <button class="edit-mode-btn" data-action="mix">Mix</button>
+                    </div>
+                </div>
+                
+                <!-- Spot Drill Mode -->
+                <div class="spot-drill-mode train-only" style="display: none;">
+                    <div id="spot-drill-range-info" class="train-range-info">
+                        <!-- Range name and description will be inserted here -->
+                    </div>
+                    <div class="poker-table-container">
+                        <div class="poker-table">
+                            <!-- Seat positions: 8 seats around the table -->
+                            <div class="seat seat-1" data-seat="1"></div>
+                            <div class="seat seat-2" data-seat="2"></div>
+                            <div class="seat seat-3" data-seat="3"></div>
+                            <div class="seat seat-4" data-seat="4"></div>
+                            <div class="seat seat-5" data-seat="5"></div>
+                            <div class="seat seat-6" data-seat="6"></div>
+                            <div class="seat seat-7" data-seat="7"></div>
+                            <div class="seat seat-8 player-seat" data-seat="8">
+                                <div class="seat-label">You</div>
+                            </div>
+                            <div class="table-center">
+                                <div id="current-hand-display" class="current-hand"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="spot-drill-hand-display">
+                        <p class="spot-drill-instruction">Select the correct action for this hand:</p>
+                    </div>
+                    <div class="spot-drill-actions">
+                        <button class="spot-action-btn" data-action="raise">Raise</button>
+                        <button class="spot-action-btn" data-action="call">Call</button>
+                        <button class="spot-action-btn" data-action="fold">Fold</button>
+                        <button class="spot-action-btn" data-action="mix">Mix</button>
+                    </div>
+                    <div class="spot-drill-progress">
+                        <p>Progress: <span id="spot-drill-progress-text">0 / 5</span></p>
+                    </div>
                 </div>
                 
                 <!-- Range Grid -->
@@ -82,9 +136,16 @@
                 
                 <!-- Train Mode Results -->
                 <div id="train-result" class="train-result train-only" style="display: none;"></div>
+                
+                <!-- Spot Drill Results -->
+                <div id="spot-drill-result" class="spot-drill-result train-only" style="display: none;"></div>
             </div>
         </div>
     </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+    
     <script src="app.js"></script>
 </body>
 </html>

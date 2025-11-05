@@ -18,6 +18,9 @@ const handsState: Map<string, HandCell> = new Map();
 let isDragging = false;
 let dragAction: HandAction | null = null;
 
+// Current edit mode (default to 'raise')
+let currentEditMode: HandAction = 'raise';
+
 // LocalStorage key for saved ranges
 const STORAGE_KEY = 'poker-trainer-saved-ranges';
 
@@ -45,11 +48,24 @@ let loadedPresets: PresetsData = {};
 
 // App mode
 type AppMode = 'edit' | 'train';
+type TrainingMode = 'range-recall' | 'spot-drill';
 let currentMode: AppMode = 'edit';
+let currentTrainingMode: TrainingMode = 'range-recall';
 let trainingRange: { [hand: string]: HandAction } | null = null;
 let trainingRangeName: string = '';
 let trainingRangeDescription: string = '';
 let currentLoadedPresetKey: string = '';
+
+// Spot Drill state
+interface SpotDrillState {
+    handsQueue: string[];
+    currentHandIndex: number;
+    correctAnswers: number;
+    totalAttempts: number;
+    results: Array<{ hand: string; correctAction: HandAction; userAction: HandAction; correct: boolean }>;
+}
+let spotDrillState: SpotDrillState | null = null;
+const INITIAL_HANDS_COUNT = 5;
 
 /**
  * Determine the hand label and type based on grid position
@@ -113,24 +129,29 @@ function handleMouseDown(hand: string, event: MouseEvent): void {
     
     isDragging = true;
     
-    // Cycle through actions: none -> raise -> call -> none
-    const nextAction = getNextAction(handState.action);
-    dragAction = nextAction;
+    // Use the currently selected edit mode
+    dragAction = currentEditMode;
     
     // Apply action to the clicked cell
-    setHandAction(hand, nextAction);
+    setHandAction(hand, currentEditMode);
 }
 
 /**
- * Get next action in cycle: fold -> raise -> call -> mix -> fold
+ * Set the current edit mode
  */
-function getNextAction(currentAction: HandAction): HandAction {
-    switch (currentAction) {
-        case 'fold': return 'raise';
-        case 'raise': return 'call';
-        case 'call': return 'mix';
-        case 'mix': return 'fold';
-    }
+function setEditMode(action: HandAction): void {
+    currentEditMode = action;
+    
+    // Update button states
+    const buttons = document.querySelectorAll('.edit-mode-btn');
+    buttons.forEach((btn) => {
+        const button = btn as HTMLButtonElement;
+        if (button.dataset.action === action) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
 }
 
 /**
@@ -229,9 +250,41 @@ async function loadPresetsFromFile(): Promise<void> {
         }
         loadedPresets = await response.json();
         console.log('Presets loaded successfully:', Object.keys(loadedPresets));
+        // Render preset buttons after loading
+        renderPresetButtons();
     } catch (error) {
         console.error('Error loading presets:', error);
     }
+}
+
+/**
+ * Render preset buttons dynamically from loaded presets
+ */
+function renderPresetButtons(): void {
+    const container = document.getElementById('presets-container');
+    if (!container) return;
+    
+    // Clear existing buttons
+    container.innerHTML = '';
+    
+    // Get all preset keys and sort them for consistent ordering
+    const presetKeys = Object.keys(loadedPresets).sort();
+    
+    if (presetKeys.length === 0) {
+        container.innerHTML = '<p class="empty-message">No presets available</p>';
+        return;
+    }
+    
+    // Create a button for each preset
+    presetKeys.forEach((presetKey) => {
+        const preset = loadedPresets[presetKey];
+        const button = document.createElement('button');
+        button.className = 'preset-button';
+        button.dataset.preset = presetKey;
+        button.textContent = preset.name || presetKey;
+        button.title = preset.description || `Load ${preset.name || presetKey}`;
+        container.appendChild(button);
+    });
 }
 
 /**
@@ -444,6 +497,85 @@ function deleteSavedRange(name: string): void {
 }
 
 /**
+ * Convert a saved range to presets.json compatible format
+ */
+function formatRangeForPresets(range: SavedRange): string {
+    // Group hands by action (exclude fold actions)
+    const groupedByAction: { [action: string]: string[] } = {
+        raise: [],
+        call: [],
+        mix: []
+    };
+    
+    // Handle both old format (array) and new format (object)
+    if (Array.isArray(range.hands)) {
+        // Legacy format - all hands are raise
+        groupedByAction.raise = range.hands;
+    } else {
+        // New format with actions
+        Object.keys(range.hands).forEach((hand) => {
+            const action = range.hands[hand];
+            if (action !== 'fold' && groupedByAction[action]) {
+                groupedByAction[action].push(hand);
+            }
+        });
+    }
+    
+    // Create preset object matching presets.json structure
+    const preset = {
+        name: range.name,
+        description: `Custom range: ${range.name}`,
+        hands: groupedByAction
+    };
+    
+    // Generate a key from the range name (lowercase, replace spaces with hyphens)
+    const key = range.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    // Format as JSON with proper indentation, including the key
+    // This makes it easy to paste directly into presets.json
+    const presetWithKey = {
+        [key]: preset
+    };
+    
+    return JSON.stringify(presetWithKey, null, 2);
+}
+
+/**
+ * Copy a saved range to clipboard as presets.json compatible JSON
+ */
+async function copyRangeToClipboard(name: string): Promise<void> {
+    const ranges = getSavedRanges();
+    const range = ranges.find(r => r.name === name);
+    
+    if (!range) {
+        alert(`Range "${name}" not found.`);
+        return;
+    }
+    
+    try {
+        const jsonString = formatRangeForPresets(range);
+        await navigator.clipboard.writeText(jsonString);
+        alert(`Range "${name}" copied to clipboard!\n\nYou can now paste it into presets.json`);
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = formatRangeForPresets(range);
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert(`Range "${name}" copied to clipboard!\n\nYou can now paste it into presets.json`);
+        } catch (fallbackError) {
+            alert('Failed to copy to clipboard. Please check your browser permissions.');
+        }
+        document.body.removeChild(textArea);
+    }
+}
+
+/**
  * Render the list of saved ranges
  */
 function renderSavedRanges(): void {
@@ -473,14 +605,31 @@ function renderSavedRanges(): void {
         nameSpan.title = `${handCount} hands - Click to load`;
         nameSpan.addEventListener('click', () => loadSavedRange(range.name));
         
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'range-action-buttons';
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-range-btn';
+        copyBtn.innerHTML = '📋';
+        copyBtn.title = 'Copy to clipboard (presets.json format)';
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyRangeToClipboard(range.name);
+        });
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-range-btn';
         deleteBtn.innerHTML = '×';
         deleteBtn.title = 'Delete range';
-        deleteBtn.addEventListener('click', () => deleteSavedRange(range.name));
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteSavedRange(range.name);
+        });
         
+        buttonContainer.appendChild(copyBtn);
+        buttonContainer.appendChild(deleteBtn);
         item.appendChild(nameSpan);
-        item.appendChild(deleteBtn);
+        item.appendChild(buttonContainer);
         container.appendChild(item);
     });
 }
@@ -497,8 +646,15 @@ function switchMode(mode: AppMode): void {
     const modeToggle = document.getElementById('mode-toggle');
     
     if (mode === 'train') {
-        // Hide navigation and edit elements
-        if (navBar) navBar.style.display = 'none';
+        // Keep nav bar visible for mode toggle button, but hide other nav sections
+        if (navBar) navBar.style.display = 'block';
+        const navSections = navBar.querySelectorAll('.nav-section');
+        navSections.forEach((section, index) => {
+            // Keep first section (mode toggle) visible, hide others
+            if (index > 0) {
+                (section as HTMLElement).style.display = 'none';
+            }
+        });
         editElements.forEach(el => (el as HTMLElement).style.display = 'none');
         trainElements.forEach(el => (el as HTMLElement).style.display = 'block');
         
@@ -524,25 +680,400 @@ function switchMode(mode: AppMode): void {
             `;
         }
         
+        const spotDrillRangeInfoDiv = document.getElementById('spot-drill-range-info');
+        if (spotDrillRangeInfoDiv) {
+            spotDrillRangeInfoDiv.innerHTML = `
+                <h2>${trainingRangeName}</h2>
+                <p class="range-description">${trainingRangeDescription}</p>
+            `;
+        }
+        
         // Clear the grid for practice
         resetAll();
+        
+        // Ensure edit mode button states are synced
+        setEditMode(currentEditMode);
+        
+        // Update training mode display
+        updateTrainingModeDisplay();
         
         // Update toggle button
         if (modeToggle) modeToggle.textContent = '← Back to Edit Mode';
     } else {
         // Show navigation and edit elements
         if (navBar) navBar.style.display = 'block';
+        // Show all nav sections
+        const navSections = navBar.querySelectorAll('.nav-section');
+        navSections.forEach((section) => {
+            (section as HTMLElement).style.display = 'block';
+        });
         editElements.forEach(el => (el as HTMLElement).style.display = 'block');
         trainElements.forEach(el => (el as HTMLElement).style.display = 'none');
+        
+        // Restore the training range to the grid
+        const rangeGrid = document.getElementById('range-grid');
+        if (rangeGrid) {
+            rangeGrid.style.display = 'grid';
+        }
+        
+        if (trainingRange) {
+            loadHandsWithActions(trainingRange);
+        }
         
         // Clear training data
         trainingRange = null;
         trainingRangeName = '';
         trainingRangeDescription = '';
+        spotDrillState = null;
+        
+        // Ensure edit mode button states are synced
+        setEditMode(currentEditMode);
         
         // Update toggle button
         if (modeToggle) modeToggle.textContent = 'Switch to Train Mode →';
     }
+}
+
+/**
+ * Switch between training modes (Range Recall vs Spot Drill)
+ */
+function switchTrainingMode(mode: TrainingMode): void {
+    currentTrainingMode = mode;
+    updateTrainingModeDisplay();
+    
+    if (mode === 'spot-drill') {
+        startSpotDrill();
+    } else {
+        stopSpotDrill();
+    }
+}
+
+/**
+ * Update the display based on current training mode
+ */
+function updateTrainingModeDisplay(): void {
+    const rangeRecallMode = document.querySelector('.range-recall-mode') as HTMLElement;
+    const spotDrillMode = document.querySelector('.spot-drill-mode') as HTMLElement;
+    const rangeGrid = document.getElementById('range-grid');
+    const trainControls = document.querySelector('.train-controls') as HTMLElement;
+    const trainResult = document.getElementById('train-result');
+    const spotDrillResult = document.getElementById('spot-drill-result');
+    const rangeRecallBtn = document.getElementById('range-recall-btn');
+    const spotDrillBtn = document.getElementById('spot-drill-btn');
+    
+    if (currentTrainingMode === 'spot-drill') {
+        if (rangeRecallMode) rangeRecallMode.style.display = 'none';
+        if (spotDrillMode) spotDrillMode.style.display = 'block';
+        if (rangeGrid) rangeGrid.style.display = 'none';
+        if (trainControls) trainControls.style.display = 'none';
+        if (trainResult) trainResult.style.display = 'none';
+        if (rangeRecallBtn) rangeRecallBtn.classList.remove('active');
+        if (spotDrillBtn) spotDrillBtn.classList.add('active');
+    } else {
+        if (rangeRecallMode) rangeRecallMode.style.display = 'block';
+        if (spotDrillMode) spotDrillMode.style.display = 'none';
+        if (rangeGrid) rangeGrid.style.display = 'grid';
+        if (trainControls) trainControls.style.display = 'flex';
+        if (spotDrillResult) spotDrillResult.style.display = 'none';
+        if (rangeRecallBtn) rangeRecallBtn.classList.add('active');
+        if (spotDrillBtn) spotDrillBtn.classList.remove('active');
+    }
+}
+
+/**
+ * Generate a shuffled array of hands from the training range
+ */
+function generateHandsQueue(count: number, excludeHands?: string[]): string[] {
+    if (!trainingRange) return [];
+    
+    let hands = Object.keys(trainingRange);
+    
+    // Exclude hands that have already been shown
+    if (excludeHands && excludeHands.length > 0) {
+        const excludeSet = new Set(excludeHands);
+        hands = hands.filter(hand => !excludeSet.has(hand));
+    }
+    
+    // If we've exhausted all hands, shuffle and start over
+    if (hands.length === 0) {
+        hands = Object.keys(trainingRange);
+    }
+    
+    const shuffled = [...hands].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+/**
+ * Start a new Spot Drill session
+ */
+function startSpotDrill(): void {
+    if (!trainingRange) return;
+    
+    const initialHands = generateHandsQueue(INITIAL_HANDS_COUNT);
+    
+    spotDrillState = {
+        handsQueue: initialHands,
+        currentHandIndex: 0,
+        correctAnswers: 0,
+        totalAttempts: 0,
+        results: []
+    };
+    
+    // Show first hand
+    displayNextHand();
+    updateSpotDrillProgress();
+    
+    // Hide results if showing
+    const resultDiv = document.getElementById('spot-drill-result');
+    if (resultDiv) resultDiv.style.display = 'none';
+}
+
+/**
+ * Stop Spot Drill and reset state
+ */
+function stopSpotDrill(): void {
+    spotDrillState = null;
+}
+
+/**
+ * Parse a hand notation string to extract card ranks
+ * Examples: "QJs" -> ["Q", "J"], "AA" -> ["A", "A"], "KQo" -> ["K", "Q"]
+ */
+function parseHand(hand: string): { rank1: string; rank2: string; suited: boolean } {
+    // Remove trailing 's' (suited) or 'o' (offsuit) if present
+    const cleanHand = hand.replace(/[so]$/, '');
+    const suited = hand.endsWith('s');
+    
+    if (cleanHand.length === 2) {
+        // Pocket pair or two different ranks
+        return {
+            rank1: cleanHand[0],
+            rank2: cleanHand[1],
+            suited
+        };
+    }
+    
+    // Fallback for unexpected formats
+    return { rank1: '?', rank2: '?', suited: false };
+}
+
+/**
+ * Get color for a card based on rank (for visualization)
+ * Uses only four colors: red, green, blue, and black
+ */
+function getCardColor(rank: string, index: number, suited: boolean): string {
+    // Only four colors: red, green, blue, black
+    // Assign colors based on rank for consistency
+    const rankColors: { [key: string]: string } = {
+        'A': '#dc3545', // Red
+        'K': '#000000', // Black
+        'Q': '#007bff', // Blue
+        'J': '#28a745', // Green
+        'T': '#dc3545', // Red
+        '9': '#28a745', // Green
+        '8': '#007bff', // Blue
+        '7': '#000000', // Black
+        '6': '#dc3545', // Red
+        '5': '#28a745', // Green
+        '4': '#007bff', // Blue
+        '3': '#000000', // Black
+        '2': '#dc3545', // Red
+    };
+    
+    // Use rank-based color, or fallback to index-based
+    if (rankColors[rank]) {
+        return rankColors[rank];
+    }
+    
+    // Fallback: index-based coloring with four colors only
+    if (index === 0) {
+        return '#dc3545'; // Red
+    } else {
+        if (suited) {
+            return '#28a745'; // Green for suited
+        } else {
+            return '#007bff'; // Blue for offsuit
+        }
+    }
+}
+
+/**
+ * Create a card element as a colored square with letter
+ */
+function createCardElement(rank: string, color: string): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'card-square';
+    card.textContent = rank;
+    card.style.backgroundColor = color;
+    return card;
+}
+
+/**
+ * Display the next hand in the queue with visual card representation
+ */
+function displayNextHand(): void {
+    if (!spotDrillState || spotDrillState.currentHandIndex >= spotDrillState.handsQueue.length) {
+        // All hands shown, show results
+        showSpotDrillResults();
+        return;
+    }
+    
+    const currentHand = spotDrillState.handsQueue[spotDrillState.currentHandIndex];
+    const { rank1, rank2, suited } = parseHand(currentHand);
+    
+    // Display in table center only
+    const handDisplay = document.getElementById('current-hand-display');
+    if (handDisplay) {
+        handDisplay.innerHTML = '';
+        
+        // Create card elements
+        const card1 = createCardElement(rank1, getCardColor(rank1, 0, suited));
+        const card2 = createCardElement(rank2, getCardColor(rank2, 1, suited));
+        
+        handDisplay.appendChild(card1);
+        handDisplay.appendChild(card2);
+    }
+}
+
+/**
+ * Handle action selection in Spot Drill
+ */
+function handleSpotDrillAction(action: HandAction): void {
+    if (!spotDrillState || !trainingRange) return;
+    
+    const currentHand = spotDrillState.handsQueue[spotDrillState.currentHandIndex];
+    const correctAction = trainingRange[currentHand];
+    
+    const isCorrect = action === correctAction;
+    
+    // Record result
+    spotDrillState.results.push({
+        hand: currentHand,
+        correctAction: correctAction,
+        userAction: action,
+        correct: isCorrect
+    });
+    
+    if (isCorrect) {
+        spotDrillState.correctAnswers++;
+        showToast('✓ Correct!', 'success');
+    } else {
+        showToast(`✗ Wrong! Correct action: ${correctAction.charAt(0).toUpperCase() + correctAction.slice(1)}`, 'error');
+    }
+    
+    spotDrillState.totalAttempts++;
+    spotDrillState.currentHandIndex++;
+    
+    updateSpotDrillProgress();
+    
+    // Show next hand after a brief delay
+    setTimeout(() => {
+        displayNextHand();
+    }, 1000);
+}
+
+/**
+ * Update progress display
+ */
+function updateSpotDrillProgress(): void {
+    if (!spotDrillState) return;
+    
+    const progressText = document.getElementById('spot-drill-progress-text');
+    if (progressText) {
+        const completed = spotDrillState.currentHandIndex;
+        const total = spotDrillState.handsQueue.length;
+        progressText.textContent = `${completed} / ${total}`;
+    }
+}
+
+/**
+ * Show Spot Drill results
+ */
+function showSpotDrillResults(): void {
+    if (!spotDrillState) return;
+    
+    const resultDiv = document.getElementById('spot-drill-result');
+    if (!resultDiv) return;
+    
+    const accuracy = spotDrillState.totalAttempts > 0 
+        ? ((spotDrillState.correctAnswers / spotDrillState.totalAttempts) * 100).toFixed(1) 
+        : '0.0';
+    
+    const resultsHtml = `
+        <h3>Spot Drill Results</h3>
+        <p class="accuracy">Accuracy: ${accuracy}%</p>
+        <p>✓ Correct: ${spotDrillState.correctAnswers} / ${spotDrillState.totalAttempts}</p>
+        <div class="spot-drill-results-actions">
+            <button id="continue-drill-btn" class="train-button submit-button">Continue Drilling</button>
+            <button id="restart-drill-btn" class="train-button reset-button">Restart</button>
+        </div>
+    `;
+    
+    resultDiv.innerHTML = resultsHtml;
+    resultDiv.style.display = 'block';
+    
+    // Setup continue and restart buttons
+    const continueBtn = document.getElementById('continue-drill-btn');
+    const restartBtn = document.getElementById('restart-drill-btn');
+    
+    if (continueBtn) {
+        // Remove old event listener by cloning and replacing
+        const newContinueBtn = continueBtn.cloneNode(true);
+        continueBtn.parentNode?.replaceChild(newContinueBtn, continueBtn);
+        
+        newContinueBtn.addEventListener('click', () => {
+            // Add more hands to queue, excluding already shown hands
+            if (spotDrillState) {
+                const shownHands = spotDrillState.results.map(r => r.hand);
+                const additionalHands = generateHandsQueue(INITIAL_HANDS_COUNT, shownHands);
+                if (additionalHands.length > 0) {
+                    spotDrillState.handsQueue = [...spotDrillState.handsQueue, ...additionalHands];
+                    resultDiv.style.display = 'none';
+                    displayNextHand();
+                } else {
+                    // All hands have been shown, show final results
+                    showSpotDrillResults();
+                }
+            }
+        });
+    }
+    
+    if (restartBtn) {
+        // Remove old event listener by cloning and replacing
+        const newRestartBtn = restartBtn.cloneNode(true);
+        restartBtn.parentNode?.replaceChild(newRestartBtn, restartBtn);
+        
+        newRestartBtn.addEventListener('click', () => {
+            startSpotDrill();
+        });
+    }
+}
+
+/**
+ * Show a toast notification
+ */
+function showToast(message: string, type: 'success' | 'error'): void {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Remove after animation
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            container.removeChild(toast);
+        }, 300);
+    }, 2000);
 }
 
 /**
@@ -642,6 +1173,21 @@ function resetTraining(): void {
  * Setup navigation button event listeners
  */
 function setupNavigation(): void {
+    // Edit mode buttons
+    const editModeButtons = document.querySelectorAll('.edit-mode-btn');
+    editModeButtons.forEach((button) => {
+        button.addEventListener('click', (e) => {
+            const target = e.target as HTMLButtonElement;
+            const action = target.dataset.action as HandAction;
+            if (action) {
+                setEditMode(action);
+            }
+        });
+    });
+    
+    // Initialize edit mode to 'raise' by default
+    setEditMode('raise');
+    
     // Reset button
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
@@ -671,17 +1217,19 @@ function setupNavigation(): void {
         });
     }
     
-    // Preset buttons
-    const presetButtons = document.querySelectorAll('.preset-button');
-    presetButtons.forEach((button) => {
-        button.addEventListener('click', (e) => {
-            const target = e.target as HTMLButtonElement;
-            const presetName = target.dataset.preset;
-            if (presetName) {
-                loadPreset(presetName);
+    // Set up event delegation for preset buttons (works with dynamically created buttons)
+    const presetsContainer = document.getElementById('presets-container');
+    if (presetsContainer) {
+        presetsContainer.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('preset-button')) {
+                const presetName = target.dataset.preset;
+                if (presetName) {
+                    loadPreset(presetName);
+                }
             }
         });
-    });
+    }
     
     // Render saved ranges on load
     renderSavedRanges();
@@ -712,6 +1260,33 @@ function setupNavigation(): void {
     if (submitTrainBtn) {
         submitTrainBtn.addEventListener('click', submitTraining);
     }
+    
+    // Training mode selector buttons
+    const rangeRecallBtn = document.getElementById('range-recall-btn');
+    if (rangeRecallBtn) {
+        rangeRecallBtn.addEventListener('click', () => {
+            switchTrainingMode('range-recall');
+        });
+    }
+    
+    const spotDrillBtn = document.getElementById('spot-drill-btn');
+    if (spotDrillBtn) {
+        spotDrillBtn.addEventListener('click', () => {
+            switchTrainingMode('spot-drill');
+        });
+    }
+    
+    // Spot drill action buttons
+    const spotActionButtons = document.querySelectorAll('.spot-action-btn');
+    spotActionButtons.forEach((button) => {
+        button.addEventListener('click', (e) => {
+            const target = e.target as HTMLButtonElement;
+            const action = target.dataset.action as HandAction;
+            if (action) {
+                handleSpotDrillAction(action);
+            }
+        });
+    });
 }
 
 /**
