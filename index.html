@@ -17,12 +17,6 @@
             </div>
             
             <div class="nav-section">
-                <h3>Actions</h3>
-                <button id="reset-btn" class="nav-button">Clear All</button>
-                <button id="select-all-btn" class="nav-button">Select All</button>
-            </div>
-            
-            <div class="nav-section">
                 <h3>Built-in Presets</h3>
                 <div id="presets-container" class="presets-container">
                     <!-- Preset buttons will be dynamically loaded here -->
@@ -57,15 +51,19 @@
                 <!-- Edit Mode Info -->
                 <div class="info edit-only">
                     <div class="edit-mode-buttons">
+                        <button id="select-all-btn" class="action-icon-btn" title="Select All">✓✓</button>
+                        <button id="reset-btn" class="action-icon-btn" title="Clear All">⊗</button>
                         <button class="edit-mode-btn" data-action="fold">Fold</button>
                         <button class="edit-mode-btn" data-action="raise">Raise</button>
                         <button class="edit-mode-btn" data-action="call">Call</button>
-                        <button class="edit-mode-btn" data-action="mix">Mix</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix (R/C)</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix (R/F)</button>
                     </div>
                     <div class="legend">
                         <span class="legend-item"><span class="legend-box raise"></span> Raise</span>
                         <span class="legend-item"><span class="legend-box call"></span> Call</span>
-                        <span class="legend-item"><span class="legend-box mix"></span> Mix (Raise/Call)</span>
+                        <span class="legend-item"><span class="legend-box mix-rc"></span> Mix (Raise/Call)</span>
+                        <span class="legend-item"><span class="legend-box mix-rf"></span> Mix (Raise/Fold)</span>
                     </div>
                 </div>
                 
@@ -79,7 +77,8 @@
                         <button class="edit-mode-btn" data-action="fold">Fold</button>
                         <button class="edit-mode-btn" data-action="raise">Raise</button>
                         <button class="edit-mode-btn" data-action="call">Call</button>
-                        <button class="edit-mode-btn" data-action="mix">Mix</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix (R/C)</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix (R/F)</button>
                     </div>
                 </div>
                 
@@ -113,7 +112,8 @@
                         <button class="spot-action-btn" data-action="raise">Raise</button>
                         <button class="spot-action-btn" data-action="call">Call</button>
                         <button class="spot-action-btn" data-action="fold">Fold</button>
-                        <button class="spot-action-btn" data-action="mix">Mix</button>
+                        <button class="spot-action-btn" data-action="mix-rc">Mix (R/C)</button>
+                        <button class="spot-action-btn" data-action="mix-rf">Mix (R/F)</button>
                     </div>
                     <div class="spot-drill-progress">
                         <p>Progress: <span id="spot-drill-progress-text">0 / 5</span></p>
@@ -125,7 +125,7 @@
                 
                 <!-- Edit Mode Stats -->
                 <div class="stats edit-only">
-                    <p>Selected: <span id="selected-count">0.0% (Raise: 0.0%, Call: 0.0%, Mix: 0.0%) - 0 / 169</span> hands</p>
+                    <p>Selected: <span id="selected-count">0.0% (Raise: 0.0%, Call: 0.0%, Mix RC: 0.0%, Mix RF: 0.0%) - 0 / 169</span> hands</p>
                 </div>
                 
                 <!-- Train Mode Controls -->

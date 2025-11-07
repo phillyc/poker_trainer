@@ -64,7 +64,7 @@
         "54s"
       ],
       "call": [],
-      "mix": []
+      "mix-rc": []
     }
   },
   "hh-btn-open": {
@@ -168,7 +168,7 @@
         "43s"
       ],
       "call": [],
-      "mix": []
+      "mix-rc": []
     }
   },
   "HH Btn v Aggro Open": {
@@ -177,8 +177,175 @@
     "position": "Button",
     "hands": {
       "raise": ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "AKs", "AQs", "AJs", "ATs", "A9s", "A8s", "A7s", "A6s", "A5s", "KQs", "KJs", "KTs", "K9s", "QJs", "QTs", "JTs", "J9s", "T9s", "AKo", "AQo", "AJo", "ATo", "KQo"],
-      "mix": ["A4s", "A3s", "A2s", "K8s", "K6s", "Q9s", "J8s", "T8s", "98s", "87s", "76s", "65s", "54s", "KJo", "KTo", "66", "55", "44", "33", "22"],
+      "mix-rc": ["A4s", "A3s", "A2s", "K8s", "K6s", "Q9s", "J8s", "T8s", "98s", "87s", "76s", "65s", "54s", "KJo", "KTo", "66", "55", "44", "33", "22"],
       "call": []
+    }
+  },
+  "hh-btn-v-limp": {
+    "name": "HH Btn v Limp",
+    "description": "HH Btn v Limp",
+    "hands": {
+      "raise": [
+        "66",
+        "77",
+        "88",
+        "99",
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+        "Q9s",
+        "AJo",
+        "JJ",
+        "JTs",
+        "J9s",
+        "TT",
+        "T9s"
+      ],
+      "call": [],
+      "mix-rc": [],
+      "mix-rf": [
+        "22",
+        "33",
+        "44",
+        "55",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+        "Q8s",
+        "J8s",
+        "ATo",
+        "T8s",
+        "98s",
+        "97s",
+        "87s",
+        "86s",
+        "76s",
+        "75s",
+        "65s",
+        "54s"
+      ]
+    }
+  },
+  "hh-hj-vs-open": {
+    "name": "HH HJ 3bet v Open",
+    "description": "HH HJ 3bet v Open",
+    "hands": {
+      "raise": [
+        "99",
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A5s",
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "AQo",
+        "QQ",
+        "JJ",
+        "TT"
+      ],
+      "call": [],
+      "mix-rc": [],
+      "mix-rf": [
+        "A9s",
+        "A4s",
+        "A3s",
+        "KTs",
+        "QJs",
+        "QTs",
+        "JTs"
+      ]
+    }
+  },
+  "hh-btn-v-aggro-open": {
+    "name": "HH Btn v Aggro Open",
+    "description": "HH Btn v Aggro Open",
+    "hands": {
+      "raise": [
+        "77",
+        "88",
+        "99",
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s",
+        "A5s",
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+        "AJo",
+        "JJ",
+        "JTs",
+        "J9s",
+        "ATo",
+        "TT",
+        "T9s"
+      ],
+      "call": [],
+      "mix-rc": [
+        "22",
+        "33",
+        "44",
+        "55",
+        "66",
+        "A4s",
+        "A3s",
+        "A2s",
+        "K8s",
+        "K6s",
+        "Q9s",
+        "KJo",
+        "J8s",
+        "KTo",
+        "T8s",
+        "98s",
+        "87s",
+        "76s",
+        "65s",
+        "54s"
+      ],
+      "mix-rf": []
     }
   }
 }

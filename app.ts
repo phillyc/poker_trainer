@@ -2,7 +2,7 @@
 const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 
 // Action types for hands
-type HandAction = 'fold' | 'raise' | 'call' | 'mix';
+type HandAction = 'fold' | 'raise' | 'call' | 'mix-rc' | 'mix-rf';
 
 // Type for a hand cell
 interface HandCell {
@@ -180,7 +180,7 @@ function setHandAction(hand: string, action: HandAction): void {
     const cell = document.querySelector(`[data-hand="${hand}"]`);
     if (cell) {
         // Remove all action classes
-        cell.classList.remove('action-fold', 'action-raise', 'action-call', 'action-mix');
+        cell.classList.remove('action-fold', 'action-raise', 'action-call', 'action-mix-rc', 'action-mix-rf');
         
         // Add appropriate class
         cell.classList.add(`action-${action}`);
@@ -196,17 +196,19 @@ function setHandAction(hand: string, action: HandAction): void {
 function updateStats(): void {
     const raiseCount = Array.from(handsState.values()).filter(h => h.action === 'raise').length;
     const callCount = Array.from(handsState.values()).filter(h => h.action === 'call').length;
-    const mixCount = Array.from(handsState.values()).filter(h => h.action === 'mix').length;
-    const totalSelected = raiseCount + callCount + mixCount;
+    const mixRcCount = Array.from(handsState.values()).filter(h => h.action === 'mix-rc').length;
+    const mixRfCount = Array.from(handsState.values()).filter(h => h.action === 'mix-rf').length;
+    const totalSelected = raiseCount + callCount + mixRcCount + mixRfCount;
     const totalHands = 169;
     const percentage = ((totalSelected / totalHands) * 100).toFixed(1);
     const raisePercentage = ((raiseCount / totalHands) * 100).toFixed(1);
     const callPercentage = ((callCount / totalHands) * 100).toFixed(1);
-    const mixPercentage = ((mixCount / totalHands) * 100).toFixed(1);
+    const mixRcPercentage = ((mixRcCount / totalHands) * 100).toFixed(1);
+    const mixRfPercentage = ((mixRfCount / totalHands) * 100).toFixed(1);
     
     const countElement = document.getElementById('selected-count');
     if (countElement) {
-        countElement.textContent = `${percentage}% (Raise: ${raisePercentage}%, Call: ${callPercentage}%, Mix: ${mixPercentage}%) - ${totalSelected} / ${totalHands}`;
+        countElement.textContent = `${percentage}% (Raise: ${raisePercentage}%, Call: ${callPercentage}%, Mix RC: ${mixRcPercentage}%, Mix RF: ${mixRfPercentage}%) - ${totalSelected} / ${totalHands}`;
     }
 }
 
@@ -332,8 +334,10 @@ function loadHandsGroupedByAction(groupedHands: { [action: string]: string[] }):
         if (Array.isArray(hands)) {
             hands.forEach((hand) => {
                 const handState = handsState.get(hand);
-                if (handState && (action === 'raise' || action === 'call' || action === 'mix' || action === 'fold')) {
-                    setHandAction(hand, action as HandAction);
+                // Support legacy 'mix' as 'mix-rc' for backward compatibility
+                const normalizedAction = action === 'mix' ? 'mix-rc' : action;
+                if (handState && (normalizedAction === 'raise' || normalizedAction === 'call' || normalizedAction === 'mix-rc' || normalizedAction === 'mix-rf' || normalizedAction === 'fold')) {
+                    setHandAction(hand, normalizedAction as HandAction);
                 }
             });
         }
@@ -523,7 +527,8 @@ function formatRangeForPresets(range: SavedRange): string {
     const groupedByAction: { [action: string]: string[] } = {
         raise: [],
         call: [],
-        mix: []
+        'mix-rc': [],
+        'mix-rf': []
     };
     
     // Handle both old format (array) and new format (object)
