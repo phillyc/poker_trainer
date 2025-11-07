@@ -3,6 +3,9 @@
 ## Overview
 This document outlines the plan for making the Poker Trainer app fully functional and optimized for both desktop and mobile (iPhone) devices.
 
+## Typical Mobile Screen Sizes
+- iPhone 17 407px x 824px
+
 ## Current State
 - Basic mobile media query exists at `@media (max-width: 768px)`
 - App uses flexbox layout with fixed 250px sidebar

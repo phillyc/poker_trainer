@@ -17,6 +17,8 @@ const handsState: Map<string, HandCell> = new Map();
 // Track drag state
 let isDragging = false;
 let dragAction: HandAction | null = null;
+let isTouching = false;
+let lastTouchedHand: string | null = null;
 
 // Current edit mode (default to 'raise')
 let currentEditMode: HandAction = 'raise';
@@ -108,6 +110,11 @@ function createRangeGrid(): void {
             cell.addEventListener('mousedown', (e) => handleMouseDown(hand, e));
             cell.addEventListener('mouseenter', () => handleMouseEnter(hand));
             
+            // Add touch event listeners for mobile
+            cell.addEventListener('touchstart', (e) => handleTouchStart(hand, e), { passive: false });
+            cell.addEventListener('touchmove', (e) => handleTouchMove(hand, e), { passive: false });
+            cell.addEventListener('touchend', () => handleTouchEnd());
+            
             // Prevent default drag behavior
             cell.addEventListener('dragstart', (e) => e.preventDefault());
             
@@ -162,6 +169,55 @@ function handleMouseEnter(hand: string): void {
     
     // Apply the drag action to this cell
     setHandAction(hand, dragAction);
+}
+
+/**
+ * Handle touch start on a cell
+ */
+function handleTouchStart(hand: string, event: TouchEvent): void {
+    event.preventDefault();
+    isTouching = true;
+    lastTouchedHand = hand;
+    
+    const handState = handsState.get(hand);
+    if (!handState) return;
+    
+    isDragging = true;
+    dragAction = currentEditMode;
+    
+    // Apply action to the touched cell
+    setHandAction(hand, currentEditMode);
+}
+
+/**
+ * Handle touch move on a cell
+ */
+function handleTouchMove(hand: string, event: TouchEvent): void {
+    if (!isTouching || !isDragging || dragAction === null) return;
+    
+    event.preventDefault();
+    
+    // Get the element under the touch point
+    const touch = event.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    if (element && element.classList.contains('hand-cell')) {
+        const touchedHand = element.getAttribute('data-hand');
+        if (touchedHand && touchedHand !== lastTouchedHand) {
+            lastTouchedHand = touchedHand;
+            setHandAction(touchedHand, dragAction);
+        }
+    }
+}
+
+/**
+ * Handle touch end
+ */
+function handleTouchEnd(): void {
+    isTouching = false;
+    isDragging = false;
+    dragAction = null;
+    lastTouchedHand = null;
 }
 
 /**
@@ -1262,6 +1318,69 @@ function resetTraining(): void {
 }
 
 /**
+ * Setup mobile navigation toggle
+ */
+function setupMobileNavigation(): void {
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const navBar = document.getElementById('nav-bar');
+    const navBackdrop = document.getElementById('nav-backdrop');
+    const hamburgerIcon = mobileNavToggle?.querySelector('.hamburger-icon') as HTMLElement;
+    const closeIcon = mobileNavToggle?.querySelector('.close-icon') as HTMLElement;
+    
+    if (!mobileNavToggle || !navBar || !navBackdrop) return;
+    
+    function openNav(): void {
+        navBar.classList.add('mobile-open');
+        navBackdrop.classList.add('show');
+        if (hamburgerIcon) hamburgerIcon.style.display = 'none';
+        if (closeIcon) closeIcon.style.display = 'block';
+        // Prevent body scroll when nav is open
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeNav(): void {
+        navBar.classList.remove('mobile-open');
+        navBackdrop.classList.remove('show');
+        if (hamburgerIcon) hamburgerIcon.style.display = 'block';
+        if (closeIcon) closeIcon.style.display = 'none';
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+    
+    // Toggle nav on button click
+    mobileNavToggle.addEventListener('click', () => {
+        if (navBar.classList.contains('mobile-open')) {
+            closeNav();
+        } else {
+            openNav();
+        }
+    });
+    
+    // Close nav on backdrop click
+    navBackdrop.addEventListener('click', () => {
+        closeNav();
+    });
+    
+    // Close nav when clicking a nav button (optional - for better UX)
+    const navButtons = navBar.querySelectorAll('.nav-button, .preset-button, .mode-toggle-btn');
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Small delay to allow the action to complete
+            setTimeout(() => {
+                closeNav();
+            }, 300);
+        });
+    });
+    
+    // Close nav on window resize (if resizing to desktop)
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeNav();
+        }
+    });
+}
+
+/**
  * Setup navigation button event listeners
  */
 function setupNavigation(): void {
@@ -1390,12 +1509,23 @@ async function init(): Promise<void> {
     
     createRangeGrid();
     setupNavigation();
+    setupMobileNavigation();
     updateStats();
     
     // Add global mouse up listener to end drag
     document.addEventListener('mouseup', () => {
         isDragging = false;
         dragAction = null;
+    });
+    
+    // Add global touch end listener to end drag
+    document.addEventListener('touchend', () => {
+        handleTouchEnd();
+    });
+    
+    // Add global touch cancel listener
+    document.addEventListener('touchcancel', () => {
+        handleTouchEnd();
     });
     
     // Prevent text selection during drag

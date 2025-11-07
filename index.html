@@ -2,15 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Poker Trainer</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Mobile Navigation Toggle Button -->
+    <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span class="hamburger-icon">☰</span>
+        <span class="close-icon" style="display: none;">×</span>
+    </button>
+    
+    <!-- Navigation Backdrop (mobile only) -->
+    <div id="nav-backdrop" class="nav-backdrop"></div>
+    
     <div class="app-layout">
         <!-- Left Navigation Bar -->
-        <nav class="nav-bar">
+        <nav class="nav-bar" id="nav-bar">
             <!-- Mode Toggle Button -->
             <div class="nav-section">
                 <button id="mode-toggle" class="mode-toggle-btn">Switch to Train Mode →</button>
@@ -56,14 +65,8 @@
                         <button class="edit-mode-btn" data-action="fold">Fold</button>
                         <button class="edit-mode-btn" data-action="raise">Raise</button>
                         <button class="edit-mode-btn" data-action="call">Call</button>
-                        <button class="edit-mode-btn" data-action="mix-rc">Mix (R/C)</button>
-                        <button class="edit-mode-btn" data-action="mix-rf">Mix (R/F)</button>
-                    </div>
-                    <div class="legend">
-                        <span class="legend-item"><span class="legend-box raise"></span> Raise</span>
-                        <span class="legend-item"><span class="legend-box call"></span> Call</span>
-                        <span class="legend-item"><span class="legend-box mix-rc"></span> Mix (Raise/Call)</span>
-                        <span class="legend-item"><span class="legend-box mix-rf"></span> Mix (Raise/Fold)</span>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix R/F</button>
                     </div>
                 </div>
                 
@@ -77,8 +80,8 @@
                         <button class="edit-mode-btn" data-action="fold">Fold</button>
                         <button class="edit-mode-btn" data-action="raise">Raise</button>
                         <button class="edit-mode-btn" data-action="call">Call</button>
-                        <button class="edit-mode-btn" data-action="mix-rc">Mix (R/C)</button>
-                        <button class="edit-mode-btn" data-action="mix-rf">Mix (R/F)</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix R/F</button>
                     </div>
                 </div>
                 
@@ -112,8 +115,8 @@
                         <button class="spot-action-btn" data-action="raise">Raise</button>
                         <button class="spot-action-btn" data-action="call">Call</button>
                         <button class="spot-action-btn" data-action="fold">Fold</button>
-                        <button class="spot-action-btn" data-action="mix-rc">Mix (R/C)</button>
-                        <button class="spot-action-btn" data-action="mix-rf">Mix (R/F)</button>
+                        <button class="spot-action-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="spot-action-btn" data-action="mix-rf">Mix R/F</button>
                     </div>
                     <div class="spot-drill-progress">
                         <p>Progress: <span id="spot-drill-progress-text">0 / 5</span></p>
