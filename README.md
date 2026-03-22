@@ -1,5 +1,7 @@
 # Poker Range Trainer
 
+🎮 **[Try it live → https://phillyc.github.io/poker_trainer/](https://phillyc.github.io/poker_trainer/)**
+
 A simple Texas Hold'em range selection tool for practicing and visualizing poker starting hand ranges.
 
 ## Quick Start
