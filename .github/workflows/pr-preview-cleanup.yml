@@ -1,0 +1,69 @@
+name: PR Preview Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove preview from gh-pages
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clone gh-pages branch
+          git clone --branch gh-pages --single-branch --depth 1 \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages-dir
+
+          cd gh-pages-dir
+
+          PREVIEW_DIR="preview/pr-${PR_NUMBER}"
+          if [ -d "$PREVIEW_DIR" ]; then
+            rm -rf "$PREVIEW_DIR"
+            git add -A
+            git commit -m "Remove preview for PR #${PR_NUMBER}"
+            git push origin gh-pages
+            echo "Cleaned up $PREVIEW_DIR"
+          else
+            echo "No preview directory found for PR #${PR_NUMBER}"
+          fi
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const repo = context.repo;
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              ...repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Preview deployed!')
+            );
+            
+            if (botComment) {
+              const merged = context.payload.pull_request.merged;
+              const status = merged ? 'merged' : 'closed';
+              const body = `🧹 **Preview removed** — PR was ${status}.\n\n` +
+                `_The preview deployment has been cleaned up._`;
+              
+              await github.rest.issues.updateComment({
+                ...repo,
+                comment_id: botComment.id,
+                body,
+              });
+            }

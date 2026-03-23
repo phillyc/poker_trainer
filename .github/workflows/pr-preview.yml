@@ -1,0 +1,103 @@
+name: PR Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy preview to gh-pages
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Collect build output
+          BUILD_DIR=$(mktemp -d)
+          cp index.html app.js styles.css components.css design-tokens.css presets.json "$BUILD_DIR/"
+
+          # Clone gh-pages branch
+          git clone --branch gh-pages --single-branch --depth 1 \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages-dir
+
+          cd gh-pages-dir
+
+          # Create/update the preview directory for this PR
+          PREVIEW_DIR="preview/pr-${PR_NUMBER}"
+          rm -rf "$PREVIEW_DIR"
+          mkdir -p "$PREVIEW_DIR"
+          cp "$BUILD_DIR"/* "$PREVIEW_DIR/"
+
+          # Commit and push
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to deploy"
+          else
+            git commit -m "Deploy preview for PR #${PR_NUMBER}"
+            git push origin gh-pages
+          fi
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const repo = context.repo;
+            
+            // Determine the base URL from GitHub Pages settings
+            // Uses the custom domain if set, otherwise the default github.io URL
+            const pagesUrl = 'https://philc.io/poker_trainer';
+            const previewUrl = `${pagesUrl}/preview/pr-${prNumber}/`;
+            const body = `🚀 **Preview deployed!**\n\n` +
+              `Preview URL: ${previewUrl}\n\n` +
+              `_This preview will be updated on each push and removed when the PR is closed._`;
+            
+            // Check for existing bot comment to update instead of spamming
+            const { data: comments } = await github.rest.issues.listComments({
+              ...repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Preview deployed!')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                ...repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
