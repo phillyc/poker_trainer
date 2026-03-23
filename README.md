@@ -60,17 +60,50 @@ Example preset structure:
 
 - `index.html` - Main HTML file
 - `styles.css` - Styling
-- `app.js` - JavaScript logic (compiled from TypeScript)
-- `app.ts` - TypeScript source code
+- `app.js` - JavaScript logic (bundled from TypeScript modules)
+- `src/` - TypeScript source modules (see [Module Structure](#module-structure))
 - `presets.json` - **Editable preset ranges** (no compilation needed!)
 - `docker-compose.yml` - Docker development environment
 - `Dockerfile.dev` - Development container configuration
 - `package.json` - Node.js dependencies and scripts
 - `PRESETS_README.md` - Guide for editing presets
 
+## Module Structure
+
+The TypeScript source is organized into logical modules under `src/`:
+
+```
+src/
+├── app.ts          # Entry point — imports everything, sets up event listeners, init()
+├── types.ts        # Shared types and interfaces (HandAction, HandCell, SavedRange, etc.)
+├── constants.ts    # Constants (RANKS, STORAGE_KEY, INITIAL_HANDS_COUNT)
+├── state.ts        # Centralized mutable state + setter functions
+├── grid.ts         # Range grid rendering and drag/touch interaction
+├── actions.ts      # Hand action logic (setHandAction, resetAll, selectAll, updateStats)
+├── presets.ts      # Preset loading, rendering, and format handling
+├── storage.ts      # LocalStorage operations (save/load/delete ranges, clipboard)
+├── training.ts     # Training modes (Range Recall + Spot Drill)
+└── ui.ts           # Toast notifications, confirm dialogs, mobile navigation
+```
+
+All modules use ES imports/exports and are bundled into a single `app.js` IIFE via esbuild.
+
 ## Development
 
-### Option 1: Docker Development Environment (Recommended) 🐳
+### Building
+
+```bash
+# Install dependencies
+npm install
+
+# Build app.js from source modules
+npm run build
+
+# Watch mode — rebuilds on file changes
+npm run watch
+```
+
+### Option 1: Docker Development Environment 🐳
 
 **Features:**
 - ✅ Auto-compiling TypeScript on file save
@@ -119,21 +152,15 @@ docker compose down
 docker compose up --build
 ```
 
-### Option 2: Simple Compilation (No Live Reload)
+### Option 2: Local Development (No Docker)
 
-For quick TypeScript compilation without the full dev environment:
-
-**Windows:**
 ```bash
-compile.bat
+npm install
+npm run watch
+# Open index.html in your browser
 ```
 
-**Linux/WSL:**
-```bash
-wsl bash -c "cd /mnt/c/Users/ph1c/dev/poker_trainer && docker build -t poker-trainer-builder . && docker create --name poker-temp poker-trainer-builder && docker cp poker-temp:/app/app.js . && docker rm poker-temp"
-```
-
-### Option 3: No Docker (Static Files Only)
+### Option 3: No Build (Static Files Only)
 
 Simply open `index.html` in your browser. The existing `app.js` file will work as-is.
 
@@ -143,8 +170,19 @@ Simply open `index.html` in your browser. The existing `app.js` file will work a
 poker_trainer/
 ├── index.html              # Main HTML file
 ├── styles.css              # Styling
-├── app.js                  # Compiled JavaScript (DO NOT EDIT - auto-generated)
-├── app.ts                  # TypeScript source (EDIT THIS)
+├── app.js                  # Bundled JavaScript (DO NOT EDIT - auto-generated)
+├── src/                    # TypeScript source modules (EDIT THESE)
+│   ├── app.ts              # Entry point
+│   ├── types.ts            # Type definitions
+│   ├── constants.ts        # Constants
+│   ├── state.ts            # Centralized state management
+│   ├── grid.ts             # Grid rendering & interactions
+│   ├── actions.ts          # Hand action logic
+│   ├── presets.ts          # Preset management
+│   ├── storage.ts          # LocalStorage operations
+│   ├── training.ts         # Training modes
+│   └── ui.ts               # UI utilities
+├── presets.json            # Editable preset ranges
 ├── docker-compose.yml      # Docker development setup
 ├── Dockerfile              # Production build
 ├── Dockerfile.dev          # Development build with watch mode
