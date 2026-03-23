@@ -53,11 +53,16 @@ jobs:
           # Copy fresh build output
           cp "$BUILD_DIR"/* .
 
-          # Commit and push
+          # Commit and push (with retry for concurrent gh-pages updates)
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to deploy"
           else
             git commit -m "Deploy main branch — $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-            git push origin gh-pages
+            for i in 1 2 3; do
+              git push origin gh-pages && break
+              echo "Push failed (attempt $i), pulling and retrying..."
+              git pull --rebase origin gh-pages
+              sleep 2
+            done
           fi

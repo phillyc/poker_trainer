@@ -54,13 +54,18 @@ jobs:
           mkdir -p "$PREVIEW_DIR"
           cp "$BUILD_DIR"/* "$PREVIEW_DIR/"
 
-          # Commit and push
+          # Commit and push (with retry for concurrent gh-pages updates)
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to deploy"
           else
             git commit -m "Deploy preview for PR #${PR_NUMBER}"
-            git push origin gh-pages
+            for i in 1 2 3; do
+              git push origin gh-pages && break
+              echo "Push failed (attempt $i), pulling and retrying..."
+              git pull --rebase origin gh-pages
+              sleep 2
+            done
           fi
 
       - name: Comment preview URL on PR
