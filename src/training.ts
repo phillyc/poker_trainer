@@ -7,8 +7,9 @@ import {
     currentLoadedPresetKey, spotDrillState,
     setCurrentMode, setCurrentTrainingMode,
     setTrainingRange, setTrainingRangeName, setTrainingRangeDescription,
-    setSpotDrillState
+    setSpotDrillState, setPotOddsDrillState
 } from './state';
+import { startPotOddsDrill } from './pot-odds';
 import { setHandAction, resetAll, getCurrentSelection, setEditMode } from './actions';
 import { loadHandsWithActions } from './presets';
 import { showToast } from './ui';
@@ -104,6 +105,7 @@ export function switchMode(mode: 'edit' | 'train'): void {
         setTrainingRangeName('');
         setTrainingRangeDescription('');
         setSpotDrillState(null);
+        setPotOddsDrillState(null);
         
         // Ensure edit mode button states are synced
         setEditMode(currentEditMode);
@@ -114,16 +116,21 @@ export function switchMode(mode: 'edit' | 'train'): void {
 }
 
 /**
- * Switch between training modes (Range Recall vs Spot Drill)
+ * Switch between training modes (Range Recall, Spot Drill, Pot Odds)
  */
-export function switchTrainingMode(mode: 'range-recall' | 'spot-drill'): void {
+export function switchTrainingMode(mode: 'range-recall' | 'spot-drill' | 'pot-odds'): void {
     setCurrentTrainingMode(mode);
     updateTrainingModeDisplay();
     
     if (mode === 'spot-drill') {
         startSpotDrill();
+        setPotOddsDrillState(null);
+    } else if (mode === 'pot-odds') {
+        stopSpotDrill();
+        startPotOddsDrill();
     } else {
         stopSpotDrill();
+        setPotOddsDrillState(null);
     }
 }
 
@@ -133,29 +140,43 @@ export function switchTrainingMode(mode: 'range-recall' | 'spot-drill'): void {
 export function updateTrainingModeDisplay(): void {
     const rangeRecallMode = document.querySelector('.range-recall-mode') as HTMLElement;
     const spotDrillMode = document.querySelector('.spot-drill-mode') as HTMLElement;
+    const potOddsMode = document.querySelector('.pot-odds-mode') as HTMLElement;
     const rangeGrid = document.getElementById('range-grid');
     const trainControls = document.querySelector('.train-controls') as HTMLElement;
     const trainResult = document.getElementById('train-result');
     const spotDrillResult = document.getElementById('spot-drill-result');
+    const potOddsResult = document.getElementById('pot-odds-result');
     const rangeRecallBtn = document.getElementById('range-recall-btn');
     const spotDrillBtn = document.getElementById('spot-drill-btn');
+    const potOddsBtn = document.getElementById('pot-odds-btn');
+    
+    // Reset all mode buttons
+    if (rangeRecallBtn) rangeRecallBtn.classList.remove('active');
+    if (spotDrillBtn) spotDrillBtn.classList.remove('active');
+    if (potOddsBtn) potOddsBtn.classList.remove('active');
+    
+    // Hide all mode-specific UI
+    if (rangeRecallMode) rangeRecallMode.style.display = 'none';
+    if (spotDrillMode) spotDrillMode.style.display = 'none';
+    if (potOddsMode) potOddsMode.style.display = 'none';
+    if (rangeGrid) rangeGrid.style.display = 'none';
+    if (trainControls) trainControls.style.display = 'none';
+    if (trainResult) trainResult.style.display = 'none';
+    if (spotDrillResult) spotDrillResult.style.display = 'none';
+    if (potOddsResult) potOddsResult.style.display = 'none';
     
     if (currentTrainingMode === 'spot-drill') {
-        if (rangeRecallMode) rangeRecallMode.style.display = 'none';
         if (spotDrillMode) spotDrillMode.style.display = 'block';
-        if (rangeGrid) rangeGrid.style.display = 'none';
-        if (trainControls) trainControls.style.display = 'none';
-        if (trainResult) trainResult.style.display = 'none';
-        if (rangeRecallBtn) rangeRecallBtn.classList.remove('active');
         if (spotDrillBtn) spotDrillBtn.classList.add('active');
+    } else if (currentTrainingMode === 'pot-odds') {
+        if (potOddsMode) potOddsMode.style.display = 'block';
+        if (potOddsBtn) potOddsBtn.classList.add('active');
     } else {
+        // range-recall
         if (rangeRecallMode) rangeRecallMode.style.display = 'block';
-        if (spotDrillMode) spotDrillMode.style.display = 'none';
         if (rangeGrid) rangeGrid.style.display = 'grid';
         if (trainControls) trainControls.style.display = 'flex';
-        if (spotDrillResult) spotDrillResult.style.display = 'none';
         if (rangeRecallBtn) rangeRecallBtn.classList.add('active');
-        if (spotDrillBtn) spotDrillBtn.classList.remove('active');
     }
 }
 

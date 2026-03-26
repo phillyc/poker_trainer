@@ -1551,3 +1551,266 @@ h1 {
         font-size: 0.85em;
     }
 }
+
+/* ======================== */
+/* POT ODDS DRILL STYLES   */
+/* ======================== */
+
+.pot-odds-mode {
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+}
+
+.pot-odds-display {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.pot-odds-scenario {
+    margin-bottom: var(--space-6);
+}
+
+.pot-amount,
+.bet-amount {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.pot-label,
+.bet-label {
+    font-family: var(--font-label);
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--on-surface-variant);
+}
+
+.pot-value {
+    font-family: var(--font-headline);
+    font-size: var(--text-5xl);
+    font-weight: var(--font-black);
+    color: var(--primary);
+    line-height: 1.1;
+}
+
+.bet-value {
+    font-family: var(--font-headline);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--on-surface-variant);
+    line-height: 1.2;
+}
+
+.pot-odds-instruction {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--on-surface-variant);
+    margin-bottom: var(--space-6);
+    letter-spacing: 0.02em;
+}
+
+.pot-odds-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    max-width: 360px;
+    margin: 0 auto var(--space-6);
+}
+
+.pot-odds-btn {
+    font-family: var(--font-headline);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    min-width: 80px;
+    min-height: 64px;
+    padding: var(--space-4) var(--space-6);
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+    border: 2px solid var(--outline-variant);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pot-odds-btn:hover:not(:disabled) {
+    background: var(--surface-container-highest);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.pot-odds-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.pot-odds-btn:disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.pot-odds-btn.pot-odds-correct {
+    background: rgba(40, 167, 69, 0.3);
+    border-color: #28a745;
+    color: #28a745;
+    animation: pot-odds-flash-correct 0.4s ease;
+}
+
+.pot-odds-btn.pot-odds-wrong {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: #dc3545;
+    color: #dc3545;
+    animation: pot-odds-flash-wrong 0.4s ease;
+}
+
+@keyframes pot-odds-flash-correct {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.6); }
+    50% { box-shadow: 0 0 20px 4px rgba(40, 167, 69, 0.4); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+@keyframes pot-odds-flash-wrong {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+    50% { box-shadow: 0 0 20px 4px rgba(220, 53, 69, 0.4); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.pot-odds-progress {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--on-surface-variant);
+}
+
+/* Pot Odds Results */
+.pot-odds-result {
+    max-width: 600px;
+    margin: var(--space-6) auto;
+    padding: var(--space-6);
+    background: var(--surface-container);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--outline-variant);
+    text-align: center;
+}
+
+.pot-odds-result h3 {
+    font-family: var(--font-headline);
+    font-size: var(--text-2xl);
+    color: var(--primary);
+    margin-bottom: var(--space-4);
+}
+
+.pot-odds-result .accuracy {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--on-surface);
+    margin-bottom: var(--space-2);
+}
+
+.pot-odds-result p {
+    font-size: var(--text-base);
+    color: var(--on-surface-variant);
+    margin-bottom: var(--space-2);
+}
+
+.pot-odds-breakdown {
+    text-align: left;
+    margin: var(--space-4) 0;
+    font-size: var(--text-sm);
+}
+
+.pot-odds-result-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-1);
+    flex-wrap: wrap;
+}
+
+.pot-odds-result-correct {
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.pot-odds-result-wrong {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.pot-odds-result-num {
+    color: var(--on-surface-variant);
+    min-width: 24px;
+}
+
+.pot-odds-result-icon {
+    font-weight: var(--font-bold);
+}
+
+.pot-odds-result-correct .pot-odds-result-icon { color: #28a745; }
+.pot-odds-result-wrong .pot-odds-result-icon { color: #dc3545; }
+
+.pot-odds-result-answer {
+    margin-left: auto;
+    color: var(--on-surface-variant);
+}
+
+.pot-odds-result-time {
+    color: var(--outline);
+    min-width: 40px;
+    text-align: right;
+}
+
+.pot-odds-results-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    margin-top: var(--space-6);
+}
+
+/* Mobile adjustments for pot odds */
+@media (max-width: 768px) {
+    .pot-value {
+        font-size: var(--text-4xl);
+    }
+    
+    .bet-value {
+        font-size: var(--text-2xl);
+    }
+    
+    .pot-odds-options {
+        max-width: 300px;
+    }
+    
+    .pot-odds-btn {
+        font-size: var(--text-xl);
+        min-height: 56px;
+        padding: var(--space-3) var(--space-4);
+    }
+    
+    .pot-odds-result-row {
+        font-size: var(--text-xs);
+    }
+}
+
+@media (max-width: 480px) {
+    .pot-value {
+        font-size: var(--text-3xl);
+    }
+    
+    .bet-value {
+        font-size: var(--text-xl);
+    }
+    
+    .pot-odds-options {
+        max-width: 260px;
+        gap: var(--space-2);
+    }
+    
+    .pot-odds-btn {
+        font-size: var(--text-lg);
+        min-height: 48px;
+    }
+}

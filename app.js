@@ -35,6 +35,7 @@
   var trainingRangeDescription = "";
   var currentLoadedPresetKey = "";
   var spotDrillState = null;
+  var potOddsDrillState = null;
   function setIsDragging(value) {
     isDragging = value;
   }
@@ -74,14 +75,15 @@
   function setSpotDrillState(value) {
     spotDrillState = value;
   }
+  function setPotOddsDrillState(value) {
+    potOddsDrillState = value;
+  }
 
   // src/actions.ts
   function setHandAction(hand, action) {
     const handState = handsState.get(hand);
-    if (!handState)
-      return;
-    if (handState.action === action)
-      return;
+    if (!handState) return;
+    if (handState.action === action) return;
     handState.action = action;
     const cell = document.querySelector(`[data-hand="${hand}"]`);
     if (cell) {
@@ -167,15 +169,13 @@
   function handleMouseDown(hand, event) {
     event.preventDefault();
     const handState = handsState.get(hand);
-    if (!handState)
-      return;
+    if (!handState) return;
     setIsDragging(true);
     setDragAction(currentEditMode);
     setHandAction(hand, currentEditMode);
   }
   function handleMouseEnter(hand) {
-    if (!isDragging || dragAction === null)
-      return;
+    if (!isDragging || dragAction === null) return;
     setHandAction(hand, dragAction);
   }
   function handleTouchStart(hand, event) {
@@ -183,15 +183,13 @@
     setIsTouching(true);
     setLastTouchedHand(hand);
     const handState = handsState.get(hand);
-    if (!handState)
-      return;
+    if (!handState) return;
     setIsDragging(true);
     setDragAction(currentEditMode);
     setHandAction(hand, currentEditMode);
   }
   function handleTouchMove(hand, event) {
-    if (!isTouching || !isDragging || dragAction === null)
-      return;
+    if (!isTouching || !isDragging || dragAction === null) return;
     event.preventDefault();
     const touch = event.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -211,8 +209,7 @@
   }
   function createRangeGrid() {
     const gridContainer = document.getElementById("range-grid");
-    if (!gridContainer)
-      return;
+    if (!gridContainer) return;
     for (let row = 0; row < 13; row++) {
       for (let col = 0; col < 13; col++) {
         const { hand, type } = getHandInfo(row, col);
@@ -251,8 +248,7 @@
   }
   function renderPresetButtons() {
     const container = document.getElementById("presets-container");
-    if (!container)
-      return;
+    if (!container) return;
     container.innerHTML = "";
     const presetKeys = Object.keys(loadedPresets).sort();
     if (presetKeys.length === 0) {
@@ -326,8 +322,7 @@
   // src/ui.ts
   function showToast(message, type) {
     const container = document.getElementById("toast-container");
-    if (!container)
-      return;
+    if (!container) return;
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -392,24 +387,19 @@
     const navBackdrop = document.getElementById("nav-backdrop");
     const hamburgerIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".hamburger-icon");
     const closeIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".close-icon");
-    if (!mobileNavToggle || !navBar || !navBackdrop)
-      return;
+    if (!mobileNavToggle || !navBar || !navBackdrop) return;
     function openNav() {
       navBar.classList.add("mobile-open");
       navBackdrop.classList.add("show");
-      if (hamburgerIcon)
-        hamburgerIcon.style.display = "none";
-      if (closeIcon)
-        closeIcon.style.display = "block";
+      if (hamburgerIcon) hamburgerIcon.style.display = "none";
+      if (closeIcon) closeIcon.style.display = "block";
       document.body.style.overflow = "hidden";
     }
     function closeNav() {
       navBar.classList.remove("mobile-open");
       navBackdrop.classList.remove("show");
-      if (hamburgerIcon)
-        hamburgerIcon.style.display = "block";
-      if (closeIcon)
-        closeIcon.style.display = "none";
+      if (hamburgerIcon) hamburgerIcon.style.display = "block";
+      if (closeIcon) closeIcon.style.display = "none";
       document.body.style.overflow = "";
     }
     mobileNavToggle.addEventListener("click", () => {
@@ -441,8 +431,7 @@
   function getSavedRanges() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored)
-        return [];
+      if (!stored) return [];
       return JSON.parse(stored);
     } catch (error) {
       console.error("Error reading saved ranges:", error);
@@ -587,8 +576,7 @@
   }
   function renderSavedRanges() {
     const container = document.getElementById("saved-ranges-list");
-    if (!container)
-      return;
+    if (!container) return;
     const ranges = getSavedRanges();
     if (ranges.length === 0) {
       container.innerHTML = '<p class="empty-message">No saved ranges yet</p>';
@@ -631,6 +619,232 @@
     });
   }
 
+  // src/pot-odds.ts
+  var BATCH_SIZE = 10;
+  function randomPot() {
+    const r = Math.random();
+    let base;
+    if (r < 0.4) {
+      base = 20 + Math.random() * 180;
+    } else if (r < 0.75) {
+      base = 200 + Math.random() * 800;
+    } else {
+      base = 1e3 + Math.random() * 4e3;
+    }
+    return Math.round(base);
+  }
+  function randomBetFraction() {
+    const commonFractions = [0.25, 0.33, 0.5, 0.66, 0.75, 1, 1.5, 2];
+    const r = Math.random();
+    if (r < 0.3) {
+      const base = commonFractions[Math.floor(Math.random() * commonFractions.length)];
+      return base + (Math.random() * 0.1 - 0.05);
+    }
+    return 0.25 + Math.random() * 1.75;
+  }
+  function generatePotOddsProblem() {
+    const pot = randomPot();
+    const betFraction = randomBetFraction();
+    const bet = Math.round(pot * betFraction);
+    const correctEquity = Math.round(bet / (pot + bet + bet) * 100);
+    const options = generateOptions(correctEquity, pot, bet);
+    return { pot, bet, correctEquity, options };
+  }
+  function generateOptions(correct, pot, bet) {
+    const options = /* @__PURE__ */ new Set();
+    options.add(correct);
+    const commonMistake = Math.round(bet / (pot + bet) * 100);
+    if (commonMistake !== correct && commonMistake >= 5 && commonMistake <= 70) {
+      options.add(commonMistake);
+    }
+    const closeMisses = [
+      correct + 3 + Math.floor(Math.random() * 3),
+      correct - 3 - Math.floor(Math.random() * 3)
+    ];
+    for (const cm of closeMisses) {
+      if (options.size < 4 && cm !== correct && cm >= 5 && cm <= 70) {
+        options.add(cm);
+      }
+    }
+    const farOffs = [
+      correct + 10 + Math.floor(Math.random() * 6),
+      correct - 10 - Math.floor(Math.random() * 6)
+    ];
+    for (const fo of farOffs) {
+      if (options.size < 4 && fo >= 5 && fo <= 70 && !options.has(fo)) {
+        options.add(fo);
+      }
+    }
+    let attempts = 0;
+    while (options.size < 4 && attempts < 50) {
+      const rand = 5 + Math.floor(Math.random() * 66);
+      if (!options.has(rand)) {
+        options.add(rand);
+      }
+      attempts++;
+    }
+    const arr = Array.from(options);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function generateBatch(size) {
+    const problems = [];
+    for (let i = 0; i < size; i++) {
+      problems.push(generatePotOddsProblem());
+    }
+    return problems;
+  }
+  function formatDollars(amount) {
+    return "$" + amount.toLocaleString();
+  }
+  function displayCurrentProblem() {
+    if (!potOddsDrillState) return;
+    const problem = potOddsDrillState.problems[potOddsDrillState.currentIndex];
+    if (!problem) return;
+    const potValue = document.getElementById("pot-value");
+    const betValue = document.getElementById("bet-value");
+    const optionsContainer = document.getElementById("pot-odds-options");
+    const progressText = document.getElementById("pot-odds-progress-text");
+    if (potValue) potValue.textContent = formatDollars(problem.pot);
+    if (betValue) betValue.textContent = formatDollars(problem.bet);
+    if (optionsContainer) {
+      optionsContainer.innerHTML = "";
+      problem.options.forEach((equity) => {
+        const btn = document.createElement("button");
+        btn.className = "pot-odds-btn";
+        btn.dataset.equity = String(equity);
+        btn.textContent = equity + "%";
+        btn.addEventListener("click", () => handlePotOddsAnswer(equity));
+        optionsContainer.appendChild(btn);
+      });
+    }
+    if (progressText) {
+      progressText.textContent = `${potOddsDrillState.currentIndex} / ${potOddsDrillState.batchSize}`;
+    }
+    potOddsDrillState.questionStartTime = Date.now();
+  }
+  function startPotOddsDrill() {
+    const problems = generateBatch(BATCH_SIZE);
+    setPotOddsDrillState({
+      problems,
+      currentIndex: 0,
+      correctAnswers: 0,
+      totalAttempts: 0,
+      results: [],
+      questionStartTime: Date.now(),
+      batchSize: BATCH_SIZE
+    });
+    const resultDiv = document.getElementById("pot-odds-result");
+    if (resultDiv) resultDiv.style.display = "none";
+    const drillMode = document.querySelector(".pot-odds-mode");
+    if (drillMode) drillMode.style.display = "block";
+    displayCurrentProblem();
+  }
+  function handlePotOddsAnswer(userAnswer) {
+    if (!potOddsDrillState) return;
+    const problem = potOddsDrillState.problems[potOddsDrillState.currentIndex];
+    if (!problem) return;
+    const responseTimeMs = Date.now() - potOddsDrillState.questionStartTime;
+    const correct = userAnswer === problem.correctEquity;
+    potOddsDrillState.results.push({
+      problem,
+      userAnswer,
+      correct,
+      responseTimeMs
+    });
+    potOddsDrillState.totalAttempts++;
+    if (correct) {
+      potOddsDrillState.correctAnswers++;
+    }
+    const optionsContainer = document.getElementById("pot-odds-options");
+    if (optionsContainer) {
+      const buttons = optionsContainer.querySelectorAll(".pot-odds-btn");
+      buttons.forEach((btn) => {
+        const el = btn;
+        const eq = parseInt(el.dataset.equity || "0", 10);
+        el.disabled = true;
+        if (eq === problem.correctEquity) {
+          el.classList.add("pot-odds-correct");
+        }
+        if (eq === userAnswer && !correct) {
+          el.classList.add("pot-odds-wrong");
+        }
+      });
+    }
+    if (correct) {
+      showToast("\u2713 Correct!", "success");
+    } else {
+      showToast(`\u2717 Wrong! Correct: ${problem.correctEquity}%`, "error");
+    }
+    potOddsDrillState.currentIndex++;
+    setTimeout(() => {
+      if (!potOddsDrillState) return;
+      if (potOddsDrillState.currentIndex >= potOddsDrillState.batchSize) {
+        showPotOddsResults();
+      } else {
+        displayCurrentProblem();
+      }
+    }, 1e3);
+  }
+  function showPotOddsResults() {
+    if (!potOddsDrillState) return;
+    const resultDiv = document.getElementById("pot-odds-result");
+    if (!resultDiv) return;
+    const accuracy = potOddsDrillState.totalAttempts > 0 ? (potOddsDrillState.correctAnswers / potOddsDrillState.totalAttempts * 100).toFixed(1) : "0.0";
+    const avgTime = potOddsDrillState.results.length > 0 ? (potOddsDrillState.results.reduce((sum, r) => sum + r.responseTimeMs, 0) / potOddsDrillState.results.length / 1e3).toFixed(1) : "0.0";
+    let breakdownHtml = '<div class="pot-odds-breakdown">';
+    potOddsDrillState.results.forEach((r, i) => {
+      const icon = r.correct ? "\u2713" : "\u2717";
+      const cls = r.correct ? "pot-odds-result-correct" : "pot-odds-result-wrong";
+      breakdownHtml += `<div class="pot-odds-result-row ${cls}">
+            <span class="pot-odds-result-num">${i + 1}.</span>
+            <span class="pot-odds-result-icon">${icon}</span>
+            <span>Pot ${formatDollars(r.problem.pot)} / Bet ${formatDollars(r.problem.bet)}</span>
+            <span class="pot-odds-result-answer">\u2192 ${r.correct ? r.userAnswer + "%" : r.userAnswer + "% (correct: " + r.problem.correctEquity + "%)"}</span>
+            <span class="pot-odds-result-time">${(r.responseTimeMs / 1e3).toFixed(1)}s</span>
+        </div>`;
+    });
+    breakdownHtml += "</div>";
+    resultDiv.innerHTML = `
+        <h3>Pot Odds Drill Results</h3>
+        <p class="accuracy">Accuracy: ${accuracy}%</p>
+        <p>\u2713 Correct: ${potOddsDrillState.correctAnswers} / ${potOddsDrillState.totalAttempts}</p>
+        <p>\u23F1 Avg Response: ${avgTime}s</p>
+        ${breakdownHtml}
+        <div class="pot-odds-results-actions">
+            <button id="pot-odds-continue-btn" class="train-button submit-button">Continue (10 more)</button>
+            <button id="pot-odds-restart-btn" class="train-button reset-button">Restart</button>
+        </div>
+    `;
+    resultDiv.style.display = "block";
+    const drillMode = document.querySelector(".pot-odds-mode");
+    if (drillMode) drillMode.style.display = "none";
+    const continueBtn = document.getElementById("pot-odds-continue-btn");
+    const restartBtn = document.getElementById("pot-odds-restart-btn");
+    if (continueBtn) {
+      continueBtn.addEventListener("click", () => {
+        if (!potOddsDrillState) return;
+        const newProblems = generateBatch(BATCH_SIZE);
+        potOddsDrillState.problems = newProblems;
+        potOddsDrillState.currentIndex = 0;
+        potOddsDrillState.results = [];
+        potOddsDrillState.correctAnswers = 0;
+        potOddsDrillState.totalAttempts = 0;
+        resultDiv.style.display = "none";
+        if (drillMode) drillMode.style.display = "block";
+        displayCurrentProblem();
+      });
+    }
+    if (restartBtn) {
+      restartBtn.addEventListener("click", () => {
+        startPotOddsDrill();
+      });
+    }
+  }
+
   // src/training.ts
   function switchMode(mode) {
     setCurrentMode(mode);
@@ -639,8 +853,7 @@
     const trainElements = document.querySelectorAll(".train-only");
     const modeToggle = document.getElementById("mode-toggle");
     if (mode === "train") {
-      if (navBar)
-        navBar.style.display = "block";
+      if (navBar) navBar.style.display = "block";
       const navSections = navBar.querySelectorAll(".nav-section");
       navSections.forEach((section, index) => {
         if (index > 0) {
@@ -675,11 +888,9 @@
       resetAll();
       setEditMode(currentEditMode);
       updateTrainingModeDisplay();
-      if (modeToggle)
-        modeToggle.textContent = "\u2190 Back to Edit Mode";
+      if (modeToggle) modeToggle.textContent = "\u2190 Back to Edit Mode";
     } else {
-      if (navBar)
-        navBar.style.display = "block";
+      if (navBar) navBar.style.display = "block";
       const navSections = navBar.querySelectorAll(".nav-section");
       navSections.forEach((section) => {
         section.style.display = "block";
@@ -697,9 +908,9 @@
       setTrainingRangeName("");
       setTrainingRangeDescription("");
       setSpotDrillState(null);
+      setPotOddsDrillState(null);
       setEditMode(currentEditMode);
-      if (modeToggle)
-        modeToggle.textContent = "Switch to Train Mode \u2192";
+      if (modeToggle) modeToggle.textContent = "Switch to Train Mode \u2192";
     }
   }
   function switchTrainingMode(mode) {
@@ -707,54 +918,53 @@
     updateTrainingModeDisplay();
     if (mode === "spot-drill") {
       startSpotDrill();
+      setPotOddsDrillState(null);
+    } else if (mode === "pot-odds") {
+      stopSpotDrill();
+      startPotOddsDrill();
     } else {
       stopSpotDrill();
+      setPotOddsDrillState(null);
     }
   }
   function updateTrainingModeDisplay() {
     const rangeRecallMode = document.querySelector(".range-recall-mode");
     const spotDrillMode = document.querySelector(".spot-drill-mode");
+    const potOddsMode = document.querySelector(".pot-odds-mode");
     const rangeGrid = document.getElementById("range-grid");
     const trainControls = document.querySelector(".train-controls");
     const trainResult = document.getElementById("train-result");
     const spotDrillResult = document.getElementById("spot-drill-result");
+    const potOddsResult = document.getElementById("pot-odds-result");
     const rangeRecallBtn = document.getElementById("range-recall-btn");
     const spotDrillBtn = document.getElementById("spot-drill-btn");
+    const potOddsBtn = document.getElementById("pot-odds-btn");
+    if (rangeRecallBtn) rangeRecallBtn.classList.remove("active");
+    if (spotDrillBtn) spotDrillBtn.classList.remove("active");
+    if (potOddsBtn) potOddsBtn.classList.remove("active");
+    if (rangeRecallMode) rangeRecallMode.style.display = "none";
+    if (spotDrillMode) spotDrillMode.style.display = "none";
+    if (potOddsMode) potOddsMode.style.display = "none";
+    if (rangeGrid) rangeGrid.style.display = "none";
+    if (trainControls) trainControls.style.display = "none";
+    if (trainResult) trainResult.style.display = "none";
+    if (spotDrillResult) spotDrillResult.style.display = "none";
+    if (potOddsResult) potOddsResult.style.display = "none";
     if (currentTrainingMode === "spot-drill") {
-      if (rangeRecallMode)
-        rangeRecallMode.style.display = "none";
-      if (spotDrillMode)
-        spotDrillMode.style.display = "block";
-      if (rangeGrid)
-        rangeGrid.style.display = "none";
-      if (trainControls)
-        trainControls.style.display = "none";
-      if (trainResult)
-        trainResult.style.display = "none";
-      if (rangeRecallBtn)
-        rangeRecallBtn.classList.remove("active");
-      if (spotDrillBtn)
-        spotDrillBtn.classList.add("active");
+      if (spotDrillMode) spotDrillMode.style.display = "block";
+      if (spotDrillBtn) spotDrillBtn.classList.add("active");
+    } else if (currentTrainingMode === "pot-odds") {
+      if (potOddsMode) potOddsMode.style.display = "block";
+      if (potOddsBtn) potOddsBtn.classList.add("active");
     } else {
-      if (rangeRecallMode)
-        rangeRecallMode.style.display = "block";
-      if (spotDrillMode)
-        spotDrillMode.style.display = "none";
-      if (rangeGrid)
-        rangeGrid.style.display = "grid";
-      if (trainControls)
-        trainControls.style.display = "flex";
-      if (spotDrillResult)
-        spotDrillResult.style.display = "none";
-      if (rangeRecallBtn)
-        rangeRecallBtn.classList.add("active");
-      if (spotDrillBtn)
-        spotDrillBtn.classList.remove("active");
+      if (rangeRecallMode) rangeRecallMode.style.display = "block";
+      if (rangeGrid) rangeGrid.style.display = "grid";
+      if (trainControls) trainControls.style.display = "flex";
+      if (rangeRecallBtn) rangeRecallBtn.classList.add("active");
     }
   }
   function generateHandsQueue(count, excludeHands) {
-    if (!trainingRange)
-      return [];
+    if (!trainingRange) return [];
     let hands = Object.keys(trainingRange);
     if (excludeHands && excludeHands.length > 0) {
       const excludeSet = new Set(excludeHands);
@@ -767,8 +977,7 @@
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
   function startSpotDrill() {
-    if (!trainingRange)
-      return;
+    if (!trainingRange) return;
     const initialHands = generateHandsQueue(INITIAL_HANDS_COUNT);
     setSpotDrillState({
       handsQueue: initialHands,
@@ -780,8 +989,7 @@
     displayNextHand();
     updateSpotDrillProgress();
     const resultDiv = document.getElementById("spot-drill-result");
-    if (resultDiv)
-      resultDiv.style.display = "none";
+    if (resultDiv) resultDiv.style.display = "none";
   }
   function stopSpotDrill() {
     setSpotDrillState(null);
@@ -864,8 +1072,7 @@
     }
   }
   function handleSpotDrillAction(action) {
-    if (!spotDrillState || !trainingRange)
-      return;
+    if (!spotDrillState || !trainingRange) return;
     const currentHand = spotDrillState.handsQueue[spotDrillState.currentHandIndex];
     const correctAction = trainingRange[currentHand];
     const isCorrect = action === correctAction;
@@ -889,8 +1096,7 @@
     }, 1e3);
   }
   function updateSpotDrillProgress() {
-    if (!spotDrillState)
-      return;
+    if (!spotDrillState) return;
     const progressText = document.getElementById("spot-drill-progress-text");
     if (progressText) {
       const completed = spotDrillState.currentHandIndex;
@@ -900,11 +1106,9 @@
   }
   function showSpotDrillResults() {
     var _a, _b;
-    if (!spotDrillState)
-      return;
+    if (!spotDrillState) return;
     const resultDiv = document.getElementById("spot-drill-result");
-    if (!resultDiv)
-      return;
+    if (!resultDiv) return;
     const accuracy = spotDrillState.totalAttempts > 0 ? (spotDrillState.correctAnswers / spotDrillState.totalAttempts * 100).toFixed(1) : "0.0";
     const resultsHtml = `
         <h3>Spot Drill Results</h3>
@@ -945,8 +1149,7 @@
     }
   }
   function submitTraining() {
-    if (!trainingRange)
-      return;
+    if (!trainingRange) return;
     const userAttempt = getCurrentSelection();
     let correct = 0;
     let incorrect = 0;
@@ -964,24 +1167,20 @@
       const cell = document.querySelector(`[data-hand="${hand}"]`);
       if (userAction === correctAction) {
         correct++;
-        if (cell)
-          cell.classList.add("train-correct");
+        if (cell) cell.classList.add("train-correct");
       } else if (userAction && userAction !== correctAction) {
         incorrect++;
-        if (cell)
-          cell.classList.add("train-incorrect");
+        if (cell) cell.classList.add("train-incorrect");
       } else {
         missed++;
-        if (cell)
-          cell.classList.add("train-missed");
+        if (cell) cell.classList.add("train-missed");
       }
     });
     Object.keys(userAttempt).forEach((hand) => {
       if (!trainingRange[hand]) {
         incorrect++;
         const cell = document.querySelector(`[data-hand="${hand}"]`);
-        if (cell)
-          cell.classList.add("train-incorrect");
+        if (cell) cell.classList.add("train-incorrect");
       }
     });
     const accuracy = totalHands > 0 ? (correct / totalHands * 100).toFixed(1) : "0.0";
@@ -1065,8 +1264,10 @@
     if (modeToggle) {
       modeToggle.addEventListener("click", () => {
         if (currentMode === "edit") {
-          if (Object.keys(getCurrentSelection()).length === 0) {
-            showToast("Please select or load a range first before entering train mode.", "error");
+          const hasRange = Object.keys(getCurrentSelection()).length > 0;
+          if (!hasRange) {
+            switchMode("train");
+            switchTrainingMode("pot-odds");
             return;
           }
           switchMode("train");
@@ -1093,6 +1294,12 @@
     if (spotDrillBtn) {
       spotDrillBtn.addEventListener("click", () => {
         switchTrainingMode("spot-drill");
+      });
+    }
+    const potOddsBtn = document.getElementById("pot-odds-btn");
+    if (potOddsBtn) {
+      potOddsBtn.addEventListener("click", () => {
+        switchTrainingMode("pot-odds");
       });
     }
     const spotActionButtons = document.querySelectorAll(".spot-action-btn");

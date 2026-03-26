@@ -29,7 +29,30 @@ export interface PresetsData {
 
 // App mode
 export type AppMode = 'edit' | 'train';
-export type TrainingMode = 'range-recall' | 'spot-drill';
+export type TrainingMode = 'range-recall' | 'spot-drill' | 'pot-odds';
+
+// Pot Odds Drill types
+export interface PotOddsProblem {
+    pot: number;
+    bet: number;
+    correctEquity: number;  // percentage as integer (e.g., 25)
+    options: number[];       // four percentage choices
+}
+
+export interface PotOddsDrillState {
+    problems: PotOddsProblem[];
+    currentIndex: number;
+    correctAnswers: number;
+    totalAttempts: number;
+    results: Array<{
+        problem: PotOddsProblem;
+        userAnswer: number;
+        correct: boolean;
+        responseTimeMs: number;
+    }>;
+    questionStartTime: number;
+    batchSize: number;
+}
 
 // Spot Drill state
 export interface SpotDrillState {
