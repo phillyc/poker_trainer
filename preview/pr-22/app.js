@@ -30,6 +30,7 @@
   var loadedPresets = {};
   var currentMode = "edit";
   var currentTrainingMode = "range-recall";
+  var currentNavTab = "editor";
   var trainingRange = null;
   var trainingRangeName = "";
   var trainingRangeDescription = "";
@@ -59,6 +60,9 @@
   }
   function setCurrentTrainingMode(value) {
     currentTrainingMode = value;
+  }
+  function setCurrentNavTab(value) {
+    currentNavTab = value;
   }
   function setTrainingRange(value) {
     trainingRange = value;
@@ -876,145 +880,119 @@
   }
 
   // src/training.ts
-  function switchMode(mode) {
-    setCurrentMode(mode);
-    const navBar = document.querySelector(".nav-bar");
-    const editElements = document.querySelectorAll(".edit-only");
-    const trainElements = document.querySelectorAll(".train-only");
-    const modeToggle = document.getElementById("mode-toggle");
-    if (mode === "train") {
-      if (navBar)
-        navBar.style.display = "block";
-      const navSections = navBar.querySelectorAll(".nav-section");
-      navSections.forEach((section, index) => {
-        if (index > 0) {
-          section.style.display = "none";
-        }
-      });
-      editElements.forEach((el) => el.style.display = "none");
-      trainElements.forEach((el) => el.style.display = "block");
-      setTrainingRange(getCurrentSelection());
-      if (currentLoadedPresetKey && loadedPresets[currentLoadedPresetKey]) {
-        const preset = loadedPresets[currentLoadedPresetKey];
-        setTrainingRangeName(preset.name);
-        setTrainingRangeDescription(preset.description);
-      } else {
-        setTrainingRangeName("Custom Range");
-        setTrainingRangeDescription("User-created range");
-      }
-      const rangeInfoDiv = document.getElementById("train-range-info");
-      if (rangeInfoDiv) {
-        rangeInfoDiv.innerHTML = `
-                <h2>${trainingRangeName}</h2>
-                <p class="range-description">${trainingRangeDescription}</p>
-            `;
-      }
-      const spotDrillRangeInfoDiv = document.getElementById("spot-drill-range-info");
-      if (spotDrillRangeInfoDiv) {
-        spotDrillRangeInfoDiv.innerHTML = `
-                <h2>${trainingRangeName}</h2>
-                <p class="range-description">${trainingRangeDescription}</p>
-            `;
-      }
+  function switchNavTab(tab) {
+    setCurrentNavTab(tab);
+    document.querySelectorAll(".nav-tab").forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-tab") === tab);
+    });
+    document.querySelectorAll(".nav-tab-content").forEach((c) => {
+      c.classList.toggle("active", c.getAttribute("data-tab-content") === tab);
+    });
+  }
+  function showView(viewId) {
+    document.querySelectorAll(".view-panel").forEach((panel) => {
+      panel.style.display = "none";
+      panel.classList.remove("active");
+    });
+    const target = document.getElementById(viewId);
+    if (target) {
+      target.style.display = "block";
+      target.classList.add("active");
+    }
+  }
+  function moveGridTo(anchorId) {
+    const grid = document.getElementById("range-grid");
+    const anchor = document.getElementById(anchorId);
+    if (grid && anchor) {
+      anchor.appendChild(grid);
+    }
+  }
+  function startTraining(mode) {
+    if (mode !== "pot-odds" && Object.keys(getCurrentSelection()).length === 0) {
+      showToast("Please load a range from the Library first.", "error");
+      switchNavTab("library");
+      return;
+    }
+    setCurrentMode("train");
+    setCurrentTrainingMode(mode);
+    setTrainingRange(getCurrentSelection());
+    if (currentLoadedPresetKey && loadedPresets[currentLoadedPresetKey]) {
+      const preset = loadedPresets[currentLoadedPresetKey];
+      setTrainingRangeName(preset.name);
+      setTrainingRangeDescription(preset.description);
+    } else {
+      setTrainingRangeName("Custom Range");
+      setTrainingRangeDescription("User-created range");
+    }
+    const rangeInfoDiv = document.getElementById("train-range-info");
+    if (rangeInfoDiv) {
+      rangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    const spotDrillRangeInfoDiv = document.getElementById("spot-drill-range-info");
+    if (spotDrillRangeInfoDiv) {
+      spotDrillRangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    document.querySelectorAll(".train-only-nav").forEach((el) => {
+      el.style.display = "block";
+    });
+    switchNavTab("practice");
+    const helpText = document.getElementById("practice-help-text");
+    if (helpText) {
+      helpText.textContent = `Training: ${trainingRangeName}`;
+      helpText.style.fontStyle = "normal";
+      helpText.style.color = "var(--primary)";
+    }
+    if (mode === "range-recall") {
+      showView("range-recall-view");
+      moveGridTo("train-grid-anchor");
       resetAll();
       setEditMode(currentEditMode);
-      updateTrainingModeDisplay();
-      if (modeToggle)
-        modeToggle.textContent = "\u2190 Back to Edit Mode";
-    } else {
-      if (navBar)
-        navBar.style.display = "block";
-      const navSections = navBar.querySelectorAll(".nav-section");
-      navSections.forEach((section) => {
-        section.style.display = "block";
-      });
-      editElements.forEach((el) => el.style.display = "block");
-      trainElements.forEach((el) => el.style.display = "none");
-      const rangeGrid = document.getElementById("range-grid");
-      if (rangeGrid) {
-        rangeGrid.style.display = "grid";
-      }
-      if (trainingRange) {
-        loadHandsWithActions(trainingRange);
-      }
-      setTrainingRange(null);
-      setTrainingRangeName("");
-      setTrainingRangeDescription("");
-      setSpotDrillState(null);
-      setPotOddsDrillState(null);
-      setEditMode(currentEditMode);
-      if (modeToggle)
-        modeToggle.textContent = "Switch to Train Mode \u2192";
-    }
-  }
-  function switchTrainingMode(mode) {
-    setCurrentTrainingMode(mode);
-    updateTrainingModeDisplay();
-    if (mode === "spot-drill") {
+    } else if (mode === "spot-drill") {
+      showView("spot-drill-view");
       startSpotDrill();
-      setPotOddsDrillState(null);
     } else if (mode === "pot-odds") {
-      stopSpotDrill();
+      showView("pot-odds-view");
       startPotOddsDrill();
-    } else {
-      stopSpotDrill();
-      setPotOddsDrillState(null);
     }
   }
-  function updateTrainingModeDisplay() {
-    const rangeRecallMode = document.querySelector(".range-recall-mode");
-    const spotDrillMode = document.querySelector(".spot-drill-mode");
-    const potOddsMode = document.querySelector(".pot-odds-mode");
-    const rangeGrid = document.getElementById("range-grid");
-    const trainControls = document.querySelector(".train-controls");
-    const trainResult = document.getElementById("train-result");
-    const spotDrillResult = document.getElementById("spot-drill-result");
-    const potOddsResult = document.getElementById("pot-odds-result");
-    const rangeRecallBtn = document.getElementById("range-recall-btn");
-    const spotDrillBtn = document.getElementById("spot-drill-btn");
-    const potOddsBtn = document.getElementById("pot-odds-btn");
-    if (rangeRecallBtn)
-      rangeRecallBtn.classList.remove("active");
-    if (spotDrillBtn)
-      spotDrillBtn.classList.remove("active");
-    if (potOddsBtn)
-      potOddsBtn.classList.remove("active");
-    if (rangeRecallMode)
-      rangeRecallMode.style.display = "none";
-    if (spotDrillMode)
-      spotDrillMode.style.display = "none";
-    if (potOddsMode)
-      potOddsMode.style.display = "none";
-    if (rangeGrid)
-      rangeGrid.style.display = "none";
-    if (trainControls)
-      trainControls.style.display = "none";
-    if (trainResult)
-      trainResult.style.display = "none";
-    if (spotDrillResult)
-      spotDrillResult.style.display = "none";
-    if (potOddsResult)
-      potOddsResult.style.display = "none";
-    if (currentTrainingMode === "spot-drill") {
-      if (spotDrillMode)
-        spotDrillMode.style.display = "block";
-      if (spotDrillBtn)
-        spotDrillBtn.classList.add("active");
-    } else if (currentTrainingMode === "pot-odds") {
-      if (potOddsMode)
-        potOddsMode.style.display = "block";
-      if (potOddsBtn)
-        potOddsBtn.classList.add("active");
-    } else {
-      if (rangeRecallMode)
-        rangeRecallMode.style.display = "block";
-      if (rangeGrid)
-        rangeGrid.style.display = "grid";
-      if (trainControls)
-        trainControls.style.display = "flex";
-      if (rangeRecallBtn)
-        rangeRecallBtn.classList.add("active");
+  function backToEditor() {
+    setCurrentMode("edit");
+    const editorView = document.getElementById("editor-view");
+    const grid = document.getElementById("range-grid");
+    const stats = editorView == null ? void 0 : editorView.querySelector(".stats");
+    if (editorView && grid) {
+      if (stats) {
+        editorView.insertBefore(grid, stats);
+      } else {
+        editorView.appendChild(grid);
+      }
     }
+    if (trainingRange) {
+      loadHandsWithActions(trainingRange);
+    }
+    setTrainingRange(null);
+    setTrainingRangeName("");
+    setTrainingRangeDescription("");
+    setSpotDrillState(null);
+    setPotOddsDrillState(null);
+    document.querySelectorAll(".train-only-nav").forEach((el) => {
+      el.style.display = "none";
+    });
+    const helpText = document.getElementById("practice-help-text");
+    if (helpText) {
+      helpText.textContent = "Load a range from the Library tab, then choose a training mode below.";
+      helpText.style.fontStyle = "italic";
+      helpText.style.color = "";
+    }
+    showView("editor-view");
+    switchNavTab("editor");
+    setEditMode(currentEditMode);
   }
   function generateHandsQueue(count, excludeHands) {
     if (!trainingRange)
@@ -1046,9 +1024,6 @@
     const resultDiv = document.getElementById("spot-drill-result");
     if (resultDiv)
       resultDiv.style.display = "none";
-  }
-  function stopSpotDrill() {
-    setSpotDrillState(null);
   }
   function parseHand(hand) {
     const cleanHand = hand.replace(/[so]$/, "");
@@ -1281,6 +1256,14 @@
 
   // src/app.ts
   function setupNavigation() {
+    document.querySelectorAll(".nav-tab[data-tab]").forEach((tab) => {
+      tab.addEventListener("click", function() {
+        const tabName = this.getAttribute("data-tab");
+        if (tabName) {
+          switchNavTab(tabName);
+        }
+      });
+    });
     const editModeButtons = document.querySelectorAll(".edit-mode-btn");
     editModeButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
@@ -1325,21 +1308,21 @@
       });
     }
     renderSavedRanges();
-    const modeToggle = document.getElementById("mode-toggle");
-    if (modeToggle) {
-      modeToggle.addEventListener("click", () => {
-        if (currentMode === "edit") {
-          const hasRange = Object.keys(getCurrentSelection()).length > 0;
-          if (!hasRange) {
-            switchMode("train");
-            switchTrainingMode("pot-odds");
-            return;
-          }
-          switchMode("train");
-        } else {
-          switchMode("edit");
-        }
-      });
+    const startRangeRecallBtn = document.getElementById("start-range-recall-btn");
+    if (startRangeRecallBtn) {
+      startRangeRecallBtn.addEventListener("click", () => startTraining("range-recall"));
+    }
+    const startSpotDrillBtn = document.getElementById("start-spot-drill-btn");
+    if (startSpotDrillBtn) {
+      startSpotDrillBtn.addEventListener("click", () => startTraining("spot-drill"));
+    }
+    const startPotOddsBtn = document.getElementById("start-pot-odds-btn");
+    if (startPotOddsBtn) {
+      startPotOddsBtn.addEventListener("click", () => startTraining("pot-odds"));
+    }
+    const backToEditorBtn = document.getElementById("back-to-editor-btn");
+    if (backToEditorBtn) {
+      backToEditorBtn.addEventListener("click", backToEditor);
     }
     const resetTrainBtn = document.getElementById("reset-train-btn");
     if (resetTrainBtn) {
@@ -1348,24 +1331,6 @@
     const submitTrainBtn = document.getElementById("submit-train-btn");
     if (submitTrainBtn) {
       submitTrainBtn.addEventListener("click", submitTraining);
-    }
-    const rangeRecallBtn = document.getElementById("range-recall-btn");
-    if (rangeRecallBtn) {
-      rangeRecallBtn.addEventListener("click", () => {
-        switchTrainingMode("range-recall");
-      });
-    }
-    const spotDrillBtn = document.getElementById("spot-drill-btn");
-    if (spotDrillBtn) {
-      spotDrillBtn.addEventListener("click", () => {
-        switchTrainingMode("spot-drill");
-      });
-    }
-    const potOddsBtn = document.getElementById("pot-odds-btn");
-    if (potOddsBtn) {
-      potOddsBtn.addEventListener("click", () => {
-        switchTrainingMode("pot-odds");
-      });
     }
     const spotActionButtons = document.querySelectorAll(".spot-action-btn");
     spotActionButtons.forEach((button) => {
