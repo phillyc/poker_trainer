@@ -59,6 +59,7 @@
                 <div class="training-mode-selector train-only" style="display: none;">
                     <button id="range-recall-btn" class="train-mode-btn active">Range Recall</button>
                     <button id="spot-drill-btn" class="train-mode-btn">Spot Drill</button>
+                    <button id="pot-odds-btn" class="train-mode-btn">Pot Odds</button>
                 </div>
                 
                 <!-- Edit Mode Info -->
@@ -127,6 +128,32 @@
                     </div>
                 </div>
                 
+                <!-- Pot Odds Drill Mode -->
+                <div class="pot-odds-mode train-only" style="display: none;">
+                    <div class="pot-odds-display">
+                        <div class="pot-odds-scenario">
+                            <div class="pot-amount">
+                                <span class="pot-label">POT</span>
+                                <span id="pot-value" class="pot-value">$0</span>
+                            </div>
+                            <div class="bet-amount">
+                                <span class="bet-label">BET</span>
+                                <span id="bet-value" class="bet-value">$0</span>
+                            </div>
+                        </div>
+                        <p class="pot-odds-instruction">What equity do you need to call?</p>
+                        <div class="pot-odds-options" id="pot-odds-options">
+                            <!-- Option buttons generated dynamically -->
+                        </div>
+                    </div>
+                    <div class="pot-odds-progress">
+                        <p>Progress: <span id="pot-odds-progress-text">0 / 10</span></p>
+                    </div>
+                </div>
+
+                <!-- Pot Odds Results -->
+                <div id="pot-odds-result" class="pot-odds-result train-only" style="display: none;"></div>
+
                 <!-- Range Grid -->
                 <div id="range-grid" class="range-grid"></div>
                 
