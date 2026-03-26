@@ -1,4 +1,4 @@
-import { HandAction, HandCell, PresetsData, AppMode, TrainingMode, SpotDrillState, PotOddsDrillState } from './types';
+import { HandAction, HandCell, PresetsData, AppMode, TrainingMode, NavTab, SpotDrillState, PotOddsDrillState } from './types';
 
 // Store the state of all hands
 export const handsState: Map<string, HandCell> = new Map();
@@ -18,6 +18,7 @@ export let loadedPresets: PresetsData = {};
 // App mode
 export let currentMode: AppMode = 'edit';
 export let currentTrainingMode: TrainingMode = 'range-recall';
+export let currentNavTab: NavTab = 'editor';
 export let trainingRange: { [hand: string]: HandAction } | null = null;
 export let trainingRangeName: string = '';
 export let trainingRangeDescription: string = '';
@@ -38,6 +39,7 @@ export function setCurrentEditMode(value: HandAction): void { currentEditMode = 
 export function setLoadedPresets(value: PresetsData): void { loadedPresets = value; }
 export function setCurrentMode(value: AppMode): void { currentMode = value; }
 export function setCurrentTrainingMode(value: TrainingMode): void { currentTrainingMode = value; }
+export function setCurrentNavTab(value: NavTab): void { currentNavTab = value; }
 export function setTrainingRange(value: { [hand: string]: HandAction } | null): void { trainingRange = value; }
 export function setTrainingRangeName(value: string): void { trainingRangeName = value; }
 export function setTrainingRangeDescription(value: string): void { trainingRangeDescription = value; }

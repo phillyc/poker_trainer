@@ -1,11 +1,11 @@
-import { HandAction, SpotDrillState } from './types';
+import { HandAction, NavTab, SpotDrillState } from './types';
 import { INITIAL_HANDS_COUNT } from './constants';
 import {
     handsState, loadedPresets,
     currentMode, currentTrainingMode, currentEditMode,
     trainingRange, trainingRangeName, trainingRangeDescription,
     currentLoadedPresetKey, spotDrillState,
-    setCurrentMode, setCurrentTrainingMode,
+    setCurrentMode, setCurrentTrainingMode, setCurrentNavTab,
     setTrainingRange, setTrainingRangeName, setTrainingRangeDescription,
     setSpotDrillState, setPotOddsDrillState
 } from './state';
@@ -15,7 +15,174 @@ import { loadHandsWithActions } from './presets';
 import { showToast } from './ui';
 
 /**
- * Switch between edit and train modes
+ * Switch sidebar navigation tab
+ */
+export function switchNavTab(tab: NavTab): void {
+    setCurrentNavTab(tab);
+    
+    // Update tab buttons
+    document.querySelectorAll('.nav-tab').forEach(t => {
+        (t as HTMLElement).classList.toggle('active', t.getAttribute('data-tab') === tab);
+    });
+    
+    // Update tab content panels
+    document.querySelectorAll('.nav-tab-content').forEach(c => {
+        (c as HTMLElement).classList.toggle('active', c.getAttribute('data-tab-content') === tab);
+    });
+}
+
+/**
+ * Show a specific view panel, hiding all others
+ */
+function showView(viewId: string): void {
+    document.querySelectorAll('.view-panel').forEach(panel => {
+        (panel as HTMLElement).style.display = 'none';
+        panel.classList.remove('active');
+    });
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+}
+
+/**
+ * Move the range grid to a target anchor element
+ */
+function moveGridTo(anchorId: string): void {
+    const grid = document.getElementById('range-grid');
+    const anchor = document.getElementById(anchorId);
+    if (grid && anchor) {
+        anchor.appendChild(grid);
+    }
+}
+
+/**
+ * Enter training mode with a specific training type
+ */
+export function startTraining(mode: 'range-recall' | 'spot-drill' | 'pot-odds'): void {
+    // Pot odds doesn't need a range
+    if (mode !== 'pot-odds' && Object.keys(getCurrentSelection()).length === 0) {
+        showToast('Please load a range from the Library first.', 'error');
+        switchNavTab('library');
+        return;
+    }
+    
+    setCurrentMode('train');
+    setCurrentTrainingMode(mode);
+    
+    // Store current range as training target
+    setTrainingRange(getCurrentSelection());
+    
+    // Get preset info if available
+    if (currentLoadedPresetKey && loadedPresets[currentLoadedPresetKey]) {
+        const preset = loadedPresets[currentLoadedPresetKey];
+        setTrainingRangeName(preset.name);
+        setTrainingRangeDescription(preset.description);
+    } else {
+        setTrainingRangeName('Custom Range');
+        setTrainingRangeDescription('User-created range');
+    }
+    
+    // Display range info in training views
+    const rangeInfoDiv = document.getElementById('train-range-info');
+    if (rangeInfoDiv) {
+        rangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    
+    const spotDrillRangeInfoDiv = document.getElementById('spot-drill-range-info');
+    if (spotDrillRangeInfoDiv) {
+        spotDrillRangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    
+    // Show training nav controls
+    document.querySelectorAll('.train-only-nav').forEach(el => {
+        (el as HTMLElement).style.display = 'block';
+    });
+    
+    // Switch to practice tab
+    switchNavTab('practice');
+    
+    // Update practice help text
+    const helpText = document.getElementById('practice-help-text');
+    if (helpText) {
+        helpText.textContent = `Training: ${trainingRangeName}`;
+        helpText.style.fontStyle = 'normal';
+        helpText.style.color = 'var(--primary)';
+    }
+    
+    // Show the appropriate view
+    if (mode === 'range-recall') {
+        showView('range-recall-view');
+        moveGridTo('train-grid-anchor');
+        resetAll();
+        setEditMode(currentEditMode);
+    } else if (mode === 'spot-drill') {
+        showView('spot-drill-view');
+        startSpotDrill();
+    } else if (mode === 'pot-odds') {
+        showView('pot-odds-view');
+        startPotOddsDrill();
+    }
+}
+
+/**
+ * Return to editor mode from training
+ */
+export function backToEditor(): void {
+    setCurrentMode('edit');
+    
+    // Move grid back to editor
+    const editorView = document.getElementById('editor-view');
+    const grid = document.getElementById('range-grid');
+    const stats = editorView?.querySelector('.stats');
+    if (editorView && grid) {
+        if (stats) {
+            editorView.insertBefore(grid, stats);
+        } else {
+            editorView.appendChild(grid);
+        }
+    }
+    
+    // Restore range
+    if (trainingRange) {
+        loadHandsWithActions(trainingRange);
+    }
+    
+    // Clear training data
+    setTrainingRange(null);
+    setTrainingRangeName('');
+    setTrainingRangeDescription('');
+    setSpotDrillState(null);
+    setPotOddsDrillState(null);
+    
+    // Hide training nav controls
+    document.querySelectorAll('.train-only-nav').forEach(el => {
+        (el as HTMLElement).style.display = 'none';
+    });
+    
+    // Reset practice help text
+    const helpText = document.getElementById('practice-help-text');
+    if (helpText) {
+        helpText.textContent = 'Load a range from the Library tab, then choose a training mode below.';
+        helpText.style.fontStyle = 'italic';
+        helpText.style.color = '';
+    }
+    
+    // Show editor view
+    showView('editor-view');
+    switchNavTab('editor');
+    setEditMode(currentEditMode);
+}
+
+/**
+ * Switch between edit and train modes (legacy compat)
  */
 export function switchMode(mode: 'edit' | 'train'): void {
     setCurrentMode(mode);
