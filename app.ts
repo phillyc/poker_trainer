@@ -50,9 +50,11 @@ let loadedPresets: PresetsData = {};
 
 // App mode
 type AppMode = 'edit' | 'train';
-type TrainingMode = 'range-recall' | 'spot-drill';
+type TrainingMode = 'range-recall' | 'spot-drill' | 'pot-odds';
+type NavTab = 'editor' | 'library' | 'practice' | 'settings';
 let currentMode: AppMode = 'edit';
 let currentTrainingMode: TrainingMode = 'range-recall';
+let currentNavTab: NavTab = 'editor';
 let trainingRange: { [hand: string]: HandAction } | null = null;
 let trainingRangeName: string = '';
 let trainingRangeDescription: string = '';
@@ -145,11 +147,12 @@ function handleMouseDown(hand: string, event: MouseEvent): void {
 
 /**
  * Set the current edit mode
+ * Syncs all edit-mode-btn instances (sidebar, mobile, training views)
  */
 function setEditMode(action: HandAction): void {
     currentEditMode = action;
     
-    // Update button states
+    // Update ALL edit-mode-btn instances across the page
     const buttons = document.querySelectorAll('.edit-mode-btn');
     buttons.forEach((btn) => {
         const button = btn as HTMLButtonElement;
@@ -715,102 +718,181 @@ function renderSavedRanges(): void {
 }
 
 /**
- * Switch between edit and train modes
+ * Switch sidebar navigation tab
+ */
+function switchNavTab(tab: NavTab): void {
+    currentNavTab = tab;
+    
+    // Update tab buttons
+    document.querySelectorAll('.nav-tab').forEach(t => {
+        (t as HTMLElement).classList.toggle('active', t.getAttribute('data-tab') === tab);
+    });
+    
+    // Update tab content panels
+    document.querySelectorAll('.nav-tab-content').forEach(c => {
+        (c as HTMLElement).classList.toggle('active', c.getAttribute('data-tab-content') === tab);
+    });
+}
+
+/**
+ * Move the range grid to a target anchor element
+ */
+function moveGridTo(anchorId: string): void {
+    const grid = document.getElementById('range-grid');
+    const anchor = document.getElementById(anchorId);
+    if (grid && anchor) {
+        anchor.appendChild(grid);
+    }
+}
+
+/**
+ * Show a specific view panel, hiding all others
+ */
+function showView(viewId: string): void {
+    document.querySelectorAll('.view-panel').forEach(panel => {
+        (panel as HTMLElement).style.display = 'none';
+        panel.classList.remove('active');
+    });
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+}
+
+/**
+ * Enter training mode with a specific training type
+ */
+function startTraining(mode: TrainingMode): void {
+    // Check if a range is loaded
+    if (Object.keys(getCurrentSelection()).length === 0) {
+        showToast('Please load a range from the Library first.', 'error');
+        switchNavTab('library');
+        return;
+    }
+    
+    currentMode = 'train';
+    currentTrainingMode = mode;
+    
+    // Store current range as training target
+    trainingRange = getCurrentSelection();
+    
+    // Get preset info if available
+    if (currentLoadedPresetKey && loadedPresets[currentLoadedPresetKey]) {
+        const preset = loadedPresets[currentLoadedPresetKey];
+        trainingRangeName = preset.name;
+        trainingRangeDescription = preset.description;
+    } else {
+        trainingRangeName = 'Custom Range';
+        trainingRangeDescription = 'User-created range';
+    }
+    
+    // Display range info in training views
+    const rangeInfoDiv = document.getElementById('train-range-info');
+    if (rangeInfoDiv) {
+        rangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    
+    const spotDrillRangeInfoDiv = document.getElementById('spot-drill-range-info');
+    if (spotDrillRangeInfoDiv) {
+        spotDrillRangeInfoDiv.innerHTML = `
+            <h2>${trainingRangeName}</h2>
+            <p class="range-description">${trainingRangeDescription}</p>
+        `;
+    }
+    
+    // Show training nav controls
+    document.querySelectorAll('.train-only-nav').forEach(el => {
+        (el as HTMLElement).style.display = 'block';
+    });
+    
+    // Switch to practice tab
+    switchNavTab('practice');
+    
+    // Update practice help text
+    const helpText = document.getElementById('practice-help-text');
+    if (helpText) {
+        helpText.textContent = `Training: ${trainingRangeName}`;
+        helpText.style.fontStyle = 'normal';
+        helpText.style.color = 'var(--primary)';
+    }
+    
+    // Show the appropriate view
+    if (mode === 'range-recall') {
+        showView('range-recall-view');
+        // Move grid to recall view
+        moveGridTo('train-grid-anchor');
+        resetAll();
+        setEditMode(currentEditMode);
+    } else if (mode === 'spot-drill') {
+        showView('spot-drill-view');
+        startSpotDrill();
+    } else if (mode === 'pot-odds') {
+        showView('pot-odds-view');
+        // Pot odds doesn't need range — it's standalone
+    }
+}
+
+/**
+ * Return to editor mode from training
+ */
+function backToEditor(): void {
+    currentMode = 'edit';
+    
+    // Move grid back to editor
+    const editorView = document.getElementById('editor-view');
+    const grid = document.getElementById('range-grid');
+    const stats = document.querySelector('.stats');
+    if (editorView && grid) {
+        // Insert grid before stats
+        if (stats) {
+            editorView.insertBefore(grid, stats);
+        } else {
+            editorView.appendChild(grid);
+        }
+    }
+    
+    // Restore range
+    if (trainingRange) {
+        loadHandsWithActions(trainingRange);
+    }
+    
+    // Clear training data
+    trainingRange = null;
+    trainingRangeName = '';
+    trainingRangeDescription = '';
+    spotDrillState = null;
+    
+    // Hide training nav controls
+    document.querySelectorAll('.train-only-nav').forEach(el => {
+        (el as HTMLElement).style.display = 'none';
+    });
+    
+    // Reset practice help text
+    const helpText = document.getElementById('practice-help-text');
+    if (helpText) {
+        helpText.textContent = 'Load a range from the Library tab, then choose a training mode below.';
+        helpText.style.fontStyle = 'italic';
+        helpText.style.color = '';
+    }
+    
+    // Show editor view
+    showView('editor-view');
+    switchNavTab('editor');
+    setEditMode(currentEditMode);
+}
+
+/**
+ * Switch between edit and train modes (legacy compat)
  */
 function switchMode(mode: AppMode): void {
-    currentMode = mode;
-    
-    const navBar = document.querySelector('.nav-bar') as HTMLElement;
-    const editElements = document.querySelectorAll('.edit-only');
-    const trainElements = document.querySelectorAll('.train-only');
-    const modeToggle = document.getElementById('mode-toggle');
-    
     if (mode === 'train') {
-        // Keep nav bar visible for mode toggle button, but hide other nav sections
-        if (navBar) navBar.style.display = 'block';
-        const navSections = navBar.querySelectorAll('.nav-section');
-        navSections.forEach((section, index) => {
-            // Keep first section (mode toggle) visible, hide others
-            if (index > 0) {
-                (section as HTMLElement).style.display = 'none';
-            }
-        });
-        editElements.forEach(el => (el as HTMLElement).style.display = 'none');
-        trainElements.forEach(el => (el as HTMLElement).style.display = 'block');
-        
-        // Store current range as training target
-        trainingRange = getCurrentSelection();
-        
-        // Get preset info if available
-        if (currentLoadedPresetKey && loadedPresets[currentLoadedPresetKey]) {
-            const preset = loadedPresets[currentLoadedPresetKey];
-            trainingRangeName = preset.name;
-            trainingRangeDescription = preset.description;
-        } else {
-            trainingRangeName = 'Custom Range';
-            trainingRangeDescription = 'User-created range';
-        }
-        
-        // Display range info
-        const rangeInfoDiv = document.getElementById('train-range-info');
-        if (rangeInfoDiv) {
-            rangeInfoDiv.innerHTML = `
-                <h2>${trainingRangeName}</h2>
-                <p class="range-description">${trainingRangeDescription}</p>
-            `;
-        }
-        
-        const spotDrillRangeInfoDiv = document.getElementById('spot-drill-range-info');
-        if (spotDrillRangeInfoDiv) {
-            spotDrillRangeInfoDiv.innerHTML = `
-                <h2>${trainingRangeName}</h2>
-                <p class="range-description">${trainingRangeDescription}</p>
-            `;
-        }
-        
-        // Clear the grid for practice
-        resetAll();
-        
-        // Ensure edit mode button states are synced
-        setEditMode(currentEditMode);
-        
-        // Update training mode display
-        updateTrainingModeDisplay();
-        
-        // Update toggle button
-        if (modeToggle) modeToggle.textContent = '← Back to Edit Mode';
+        startTraining('range-recall');
     } else {
-        // Show navigation and edit elements
-        if (navBar) navBar.style.display = 'block';
-        // Show all nav sections
-        const navSections = navBar.querySelectorAll('.nav-section');
-        navSections.forEach((section) => {
-            (section as HTMLElement).style.display = 'block';
-        });
-        editElements.forEach(el => (el as HTMLElement).style.display = 'block');
-        trainElements.forEach(el => (el as HTMLElement).style.display = 'none');
-        
-        // Restore the training range to the grid
-        const rangeGrid = document.getElementById('range-grid');
-        if (rangeGrid) {
-            rangeGrid.style.display = 'grid';
-        }
-        
-        if (trainingRange) {
-            loadHandsWithActions(trainingRange);
-        }
-        
-        // Clear training data
-        trainingRange = null;
-        trainingRangeName = '';
-        trainingRangeDescription = '';
-        spotDrillState = null;
-        
-        // Ensure edit mode button states are synced
-        setEditMode(currentEditMode);
-        
-        // Update toggle button
-        if (modeToggle) modeToggle.textContent = 'Switch to Train Mode →';
+        backToEditor();
     }
 }
 
@@ -830,33 +912,16 @@ function switchTrainingMode(mode: TrainingMode): void {
 
 /**
  * Update the display based on current training mode
+ * Now handled by view panels — this is kept for internal state switches
  */
 function updateTrainingModeDisplay(): void {
-    const rangeRecallMode = document.querySelector('.range-recall-mode') as HTMLElement;
-    const spotDrillMode = document.querySelector('.spot-drill-mode') as HTMLElement;
-    const rangeGrid = document.getElementById('range-grid');
-    const trainControls = document.querySelector('.train-controls') as HTMLElement;
-    const trainResult = document.getElementById('train-result');
-    const spotDrillResult = document.getElementById('spot-drill-result');
-    const rangeRecallBtn = document.getElementById('range-recall-btn');
-    const spotDrillBtn = document.getElementById('spot-drill-btn');
-    
     if (currentTrainingMode === 'spot-drill') {
-        if (rangeRecallMode) rangeRecallMode.style.display = 'none';
-        if (spotDrillMode) spotDrillMode.style.display = 'block';
-        if (rangeGrid) rangeGrid.style.display = 'none';
-        if (trainControls) trainControls.style.display = 'none';
-        if (trainResult) trainResult.style.display = 'none';
-        if (rangeRecallBtn) rangeRecallBtn.classList.remove('active');
-        if (spotDrillBtn) spotDrillBtn.classList.add('active');
+        showView('spot-drill-view');
+    } else if (currentTrainingMode === 'pot-odds') {
+        showView('pot-odds-view');
     } else {
-        if (rangeRecallMode) rangeRecallMode.style.display = 'block';
-        if (spotDrillMode) spotDrillMode.style.display = 'none';
-        if (rangeGrid) rangeGrid.style.display = 'grid';
-        if (trainControls) trainControls.style.display = 'flex';
-        if (spotDrillResult) spotDrillResult.style.display = 'none';
-        if (rangeRecallBtn) rangeRecallBtn.classList.add('active');
-        if (spotDrillBtn) spotDrillBtn.classList.remove('active');
+        showView('range-recall-view');
+        moveGridTo('train-grid-anchor');
     }
 }
 
@@ -1362,7 +1427,7 @@ function setupMobileNavigation(): void {
     });
     
     // Close nav when clicking a nav button (optional - for better UX)
-    const navButtons = navBar.querySelectorAll('.nav-button, .preset-button, .mode-toggle-btn');
+    const navButtons = navBar.querySelectorAll('.nav-button, .preset-button, .nav-tab');
     navButtons.forEach(button => {
         button.addEventListener('click', () => {
             // Small delay to allow the action to complete
@@ -1384,7 +1449,18 @@ function setupMobileNavigation(): void {
  * Setup navigation button event listeners
  */
 function setupNavigation(): void {
-    // Edit mode buttons
+    // === SIDEBAR TAB NAVIGATION ===
+    const navTabs = document.querySelectorAll('.nav-tab');
+    navTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab') as NavTab;
+            if (tabName) {
+                switchNavTab(tabName);
+            }
+        });
+    });
+    
+    // === EDIT MODE BUTTONS (sidebar + mobile + training) ===
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     editModeButtons.forEach((button) => {
         button.addEventListener('click', (e) => {
@@ -1445,20 +1521,26 @@ function setupNavigation(): void {
     // Render saved ranges on load
     renderSavedRanges();
     
-    // Mode toggle button
-    const modeToggle = document.getElementById('mode-toggle');
-    if (modeToggle) {
-        modeToggle.addEventListener('click', () => {
-            if (currentMode === 'edit') {
-                if (Object.keys(getCurrentSelection()).length === 0) {
-                    showToast('Please select or load a range first before entering train mode.', 'error');
-                    return;
-                }
-                switchMode('train');
-            } else {
-                switchMode('edit');
-            }
-        });
+    // === PRACTICE MODE BUTTONS ===
+    const startRangeRecallBtn = document.getElementById('start-range-recall-btn');
+    if (startRangeRecallBtn) {
+        startRangeRecallBtn.addEventListener('click', () => startTraining('range-recall'));
+    }
+    
+    const startSpotDrillBtn = document.getElementById('start-spot-drill-btn');
+    if (startSpotDrillBtn) {
+        startSpotDrillBtn.addEventListener('click', () => startTraining('spot-drill'));
+    }
+    
+    const startPotOddsBtn = document.getElementById('start-pot-odds-btn');
+    if (startPotOddsBtn) {
+        startPotOddsBtn.addEventListener('click', () => startTraining('pot-odds'));
+    }
+    
+    // Back to editor button
+    const backToEditorBtn = document.getElementById('back-to-editor-btn');
+    if (backToEditorBtn) {
+        backToEditorBtn.addEventListener('click', backToEditor);
     }
     
     // Train mode buttons
@@ -1470,21 +1552,6 @@ function setupNavigation(): void {
     const submitTrainBtn = document.getElementById('submit-train-btn');
     if (submitTrainBtn) {
         submitTrainBtn.addEventListener('click', submitTraining);
-    }
-    
-    // Training mode selector buttons
-    const rangeRecallBtn = document.getElementById('range-recall-btn');
-    if (rangeRecallBtn) {
-        rangeRecallBtn.addEventListener('click', () => {
-            switchTrainingMode('range-recall');
-        });
-    }
-    
-    const spotDrillBtn = document.getElementById('spot-drill-btn');
-    if (spotDrillBtn) {
-        spotDrillBtn.addEventListener('click', () => {
-            switchTrainingMode('spot-drill');
-        });
     }
     
     // Spot drill action buttons
