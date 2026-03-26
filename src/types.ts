@@ -30,6 +30,7 @@ export interface PresetsData {
 // App mode
 export type AppMode = 'edit' | 'train';
 export type TrainingMode = 'range-recall' | 'spot-drill' | 'pot-odds';
+export type NavTab = 'editor' | 'library' | 'practice' | 'settings';
 
 // Pot Odds Drill types
 export interface PotOddsProblem {

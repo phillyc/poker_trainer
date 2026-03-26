@@ -1,4 +1,4 @@
-import { HandAction } from './types';
+import { HandAction, NavTab } from './types';
 import {
     isDragging, currentMode,
     setIsDragging, setDragAction
@@ -7,15 +7,24 @@ import { setEditMode, resetAll, selectAll, getCurrentSelection, updateStats } fr
 import { createRangeGrid, handleTouchEnd } from './grid';
 import { loadPresetsFromFile, loadPreset } from './presets';
 import { saveCurrentRange, renderSavedRanges } from './storage';
-import { switchMode, switchTrainingMode, handleSpotDrillAction, submitTraining, resetTraining } from './training';
-import { startPotOddsDrill } from './pot-odds';
+import { switchNavTab, startTraining, backToEditor, handleSpotDrillAction, submitTraining, resetTraining } from './training';
 import { showToast, setupMobileNavigation } from './ui';
 
 /**
  * Setup navigation button event listeners
  */
 function setupNavigation(): void {
-    // Edit mode buttons
+    // === SIDEBAR TAB NAVIGATION ===
+    document.querySelectorAll('.nav-tab[data-tab]').forEach((tab) => {
+        tab.addEventListener('click', function(this: HTMLElement) {
+            const tabName = this.getAttribute('data-tab') as NavTab;
+            if (tabName) {
+                switchNavTab(tabName);
+            }
+        });
+    });
+
+    // === EDIT MODE BUTTONS (sidebar + mobile + training) ===
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     editModeButtons.forEach((button) => {
         button.addEventListener('click', (e) => {
@@ -76,25 +85,28 @@ function setupNavigation(): void {
     // Render saved ranges on load
     renderSavedRanges();
     
-    // Mode toggle button
-    const modeToggle = document.getElementById('mode-toggle');
-    if (modeToggle) {
-        modeToggle.addEventListener('click', () => {
-            if (currentMode === 'edit') {
-                const hasRange = Object.keys(getCurrentSelection()).length > 0;
-                if (!hasRange) {
-                    // No range loaded — enter train mode with pot-odds as default
-                    switchMode('train');
-                    switchTrainingMode('pot-odds');
-                    return;
-                }
-                switchMode('train');
-            } else {
-                switchMode('edit');
-            }
-        });
+    // === PRACTICE MODE BUTTONS ===
+    const startRangeRecallBtn = document.getElementById('start-range-recall-btn');
+    if (startRangeRecallBtn) {
+        startRangeRecallBtn.addEventListener('click', () => startTraining('range-recall'));
     }
     
+    const startSpotDrillBtn = document.getElementById('start-spot-drill-btn');
+    if (startSpotDrillBtn) {
+        startSpotDrillBtn.addEventListener('click', () => startTraining('spot-drill'));
+    }
+    
+    const startPotOddsBtn = document.getElementById('start-pot-odds-btn');
+    if (startPotOddsBtn) {
+        startPotOddsBtn.addEventListener('click', () => startTraining('pot-odds'));
+    }
+    
+    // Back to editor button
+    const backToEditorBtn = document.getElementById('back-to-editor-btn');
+    if (backToEditorBtn) {
+        backToEditorBtn.addEventListener('click', backToEditor);
+    }
+
     // Train mode buttons
     const resetTrainBtn = document.getElementById('reset-train-btn');
     if (resetTrainBtn) {
@@ -104,28 +116,6 @@ function setupNavigation(): void {
     const submitTrainBtn = document.getElementById('submit-train-btn');
     if (submitTrainBtn) {
         submitTrainBtn.addEventListener('click', submitTraining);
-    }
-    
-    // Training mode selector buttons
-    const rangeRecallBtn = document.getElementById('range-recall-btn');
-    if (rangeRecallBtn) {
-        rangeRecallBtn.addEventListener('click', () => {
-            switchTrainingMode('range-recall');
-        });
-    }
-    
-    const spotDrillBtn = document.getElementById('spot-drill-btn');
-    if (spotDrillBtn) {
-        spotDrillBtn.addEventListener('click', () => {
-            switchTrainingMode('spot-drill');
-        });
-    }
-    
-    const potOddsBtn = document.getElementById('pot-odds-btn');
-    if (potOddsBtn) {
-        potOddsBtn.addEventListener('click', () => {
-            switchTrainingMode('pot-odds');
-        });
     }
     
     // Spot drill action buttons
