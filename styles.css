@@ -119,6 +119,11 @@ button {
     border-bottom-color: var(--primary);
 }
 
+.nav-tab-icon,
+.nav-tab-label {
+    pointer-events: none; /* Clicks pass through to parent button */
+}
+
 .nav-tab-icon {
     font-size: var(--text-lg);
     line-height: 1;

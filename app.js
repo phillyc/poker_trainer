@@ -1263,15 +1263,18 @@ function setupMobileNavigation() {
  */
 function setupNavigation() {
     // === SIDEBAR TAB NAVIGATION ===
-    const navTabs = document.querySelectorAll('.nav-tab');
-    navTabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.getAttribute('data-tab');
-            if (tabName) {
-                switchNavTab(tabName);
+    const navTabsContainer = document.querySelector('.nav-tabs');
+    if (navTabsContainer) {
+        navTabsContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('.nav-tab');
+            if (target) {
+                const tabName = target.getAttribute('data-tab');
+                if (tabName) {
+                    switchNavTab(tabName);
+                }
             }
         });
-    });
+    }
     // === EDIT MODE BUTTONS (sidebar + mobile + training) ===
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     editModeButtons.forEach((button) => {
