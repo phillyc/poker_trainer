@@ -12,6 +12,39 @@ body {
     padding: 0;
     margin: 0;
     font-size: 16px; /* Prevent iOS zoom on input focus */
+    font-weight: var(--font-normal);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global typography baseline */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headline);
+    font-weight: var(--font-bold);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+h2 {
+    font-size: var(--text-2xl);
+}
+
+h3 {
+    font-size: var(--text-lg);
+}
+
+p {
+    font-family: var(--font-body);
+    line-height: 1.6;
+}
+
+input, button, select, textarea {
+    font-family: inherit;
+}
+
+button {
+    font-family: var(--font-label);
 }
 
 .app-layout {
@@ -43,7 +76,7 @@ body {
     border: 2px solid var(--outline-variant);
     border-radius: var(--radius-lg);
     cursor: pointer;
-    font-size: 24px;
+    font-size: var(--text-2xl);
     color: var(--on-surface);
     box-shadow: var(--shadow-md);
     transition: all var(--transition-normal);
@@ -240,7 +273,7 @@ body {
     border: none;
     color: var(--primary);
     cursor: pointer;
-    font-size: 1.1em;
+    font-size: var(--text-lg);
     padding: 0 8px;
     transition: all var(--transition-normal);
     line-height: 1;
@@ -256,7 +289,7 @@ body {
     border: none;
     color: var(--tertiary);
     cursor: pointer;
-    font-size: 1.2em;
+    font-size: var(--text-xl);
     padding: 0 8px;
     transition: color var(--transition-normal);
 }
@@ -288,7 +321,7 @@ h1 {
     font-family: var(--font-headline);
     color: var(--primary);
     margin-bottom: 20px;
-    font-size: clamp(1.5em, 4vw, 2em);
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
     font-weight: var(--font-bold);
     letter-spacing: -0.025em;
 }
@@ -309,7 +342,8 @@ h1 {
 
 .action-icon-btn {
     padding: 10px 15px;
-    font-size: 1.2em;
+    font-size: var(--text-xl);
+    font-family: var(--font-label);
     font-weight: var(--font-bold);
     border: 2px solid;
     border-radius: var(--radius);
@@ -505,7 +539,7 @@ h1 {
     border-radius: var(--radius);
     font-family: var(--font-label);
     font-weight: var(--font-bold);
-    font-size: 0.9em;
+    font-size: var(--text-base);
     cursor: pointer;
     transition: background-color var(--transition-normal), border-color var(--transition-normal), color var(--transition-normal);
     user-select: none;
@@ -722,7 +756,7 @@ h1 {
 
 .train-result .accuracy {
     font-family: var(--font-headline);
-    font-size: 2em;
+    font-size: var(--text-4xl);
     font-weight: var(--font-bold);
     color: var(--secondary);
     margin: 15px 0;
@@ -889,6 +923,8 @@ h1 {
     font-family: var(--font-label);
     font-weight: var(--font-bold);
     font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
@@ -971,7 +1007,8 @@ h1 {
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-lg);
-    font-size: 2em;
+    font-family: var(--font-headline);
+    font-size: var(--text-4xl);
     font-weight: var(--font-bold);
     color: white;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
@@ -1098,7 +1135,7 @@ h1 {
 
 .spot-drill-result .accuracy {
     font-family: var(--font-headline);
-    font-size: 2em;
+    font-size: var(--text-4xl);
     font-weight: var(--font-bold);
     color: var(--secondary);
     margin: 15px 0;
@@ -1195,9 +1232,10 @@ h1 {
 .confirm-message {
     font-size: var(--text-base);
     font-family: var(--font-body);
+    font-weight: var(--font-normal);
     margin-bottom: 25px;
     color: var(--on-surface);
-    line-height: 1.5;
+    line-height: 1.6;
     text-align: center;
 }
 
@@ -1342,7 +1380,7 @@ h1 {
     
     .action-icon-btn {
         padding: 12px 16px;
-        font-size: 1.1em;
+        font-size: var(--text-lg);
     }
     
     /* Legend - wrap on mobile */
@@ -1470,7 +1508,7 @@ h1 {
     .delete-range-btn {
         min-width: 44px;
         min-height: 44px;
-        font-size: 1.3em;
+        font-size: var(--text-xl);
     }
     
     /* Range input */
@@ -1548,7 +1586,7 @@ h1 {
     }
     
     .hand-cell {
-        font-size: 0.85em;
+        font-size: var(--text-sm);
     }
 }
 
