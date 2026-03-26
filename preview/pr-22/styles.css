@@ -72,6 +72,7 @@ button {
     gap: var(--space-3);
     padding: var(--space-6) var(--space-5);
     border-bottom: 1px solid var(--outline-variant);
+    flex-shrink: 0;
 }
 
 .nav-brand-icon {
@@ -91,6 +92,9 @@ button {
     display: flex;
     border-bottom: 1px solid var(--outline-variant);
     padding: 0;
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
 }
 
 .nav-tab {
@@ -142,10 +146,12 @@ button {
     padding: var(--space-4) var(--space-5);
     flex: 1;
     overflow-y: auto;
+    min-height: 0; /* Allow flex child to shrink and scroll */
 }
 
 .nav-tab-content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 /* === PAINT MODES (sidebar) === */
