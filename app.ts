@@ -721,16 +721,23 @@ function renderSavedRanges(): void {
  * Switch sidebar navigation tab
  */
 function switchNavTab(tab: NavTab): void {
+    console.log('[nav] switchNavTab:', tab);
     currentNavTab = tab;
     
     // Update tab buttons
-    document.querySelectorAll('.nav-tab').forEach(t => {
+    const tabs = document.querySelectorAll('.nav-tab');
+    console.log('[nav] found', tabs.length, 'tab buttons');
+    tabs.forEach(t => {
         (t as HTMLElement).classList.toggle('active', t.getAttribute('data-tab') === tab);
     });
     
     // Update tab content panels
-    document.querySelectorAll('.nav-tab-content').forEach(c => {
-        (c as HTMLElement).classList.toggle('active', c.getAttribute('data-tab-content') === tab);
+    const panels = document.querySelectorAll('.nav-tab-content');
+    console.log('[nav] found', panels.length, 'content panels');
+    panels.forEach(c => {
+        const isTarget = c.getAttribute('data-tab-content') === tab;
+        (c as HTMLElement).classList.toggle('active', isTarget);
+        console.log('[nav] panel', c.getAttribute('data-tab-content'), isTarget ? 'SHOW' : 'hide');
     });
 }
 
@@ -1450,18 +1457,17 @@ function setupMobileNavigation(): void {
  */
 function setupNavigation(): void {
     // === SIDEBAR TAB NAVIGATION ===
-    const navTabsContainer = document.querySelector('.nav-tabs');
-    if (navTabsContainer) {
-        navTabsContainer.addEventListener('click', (e) => {
-            const target = (e.target as HTMLElement).closest('.nav-tab') as HTMLElement | null;
-            if (target) {
-                const tabName = target.getAttribute('data-tab') as NavTab;
-                if (tabName) {
-                    switchNavTab(tabName);
-                }
+    document.querySelectorAll('.nav-tab[data-tab]').forEach((tab) => {
+        tab.addEventListener('click', function(this: HTMLElement, e: Event) {
+            e.preventDefault();
+            e.stopPropagation();
+            const tabName = this.getAttribute('data-tab') as NavTab;
+            console.log('[nav] tab clicked:', tabName);
+            if (tabName) {
+                switchNavTab(tabName);
             }
         });
-    }
+    });
     
     // === EDIT MODE BUTTONS (sidebar + mobile + training) ===
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');

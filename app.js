@@ -604,14 +604,21 @@ function renderSavedRanges() {
  * Switch sidebar navigation tab
  */
 function switchNavTab(tab) {
+    console.log('[nav] switchNavTab:', tab);
     currentNavTab = tab;
     // Update tab buttons
-    document.querySelectorAll('.nav-tab').forEach(t => {
+    const tabs = document.querySelectorAll('.nav-tab');
+    console.log('[nav] found', tabs.length, 'tab buttons');
+    tabs.forEach(t => {
         t.classList.toggle('active', t.getAttribute('data-tab') === tab);
     });
     // Update tab content panels
-    document.querySelectorAll('.nav-tab-content').forEach(c => {
-        c.classList.toggle('active', c.getAttribute('data-tab-content') === tab);
+    const panels = document.querySelectorAll('.nav-tab-content');
+    console.log('[nav] found', panels.length, 'content panels');
+    panels.forEach(c => {
+        const isTarget = c.getAttribute('data-tab-content') === tab;
+        c.classList.toggle('active', isTarget);
+        console.log('[nav] panel', c.getAttribute('data-tab-content'), isTarget ? 'SHOW' : 'hide');
     });
 }
 /**
@@ -1263,18 +1270,17 @@ function setupMobileNavigation() {
  */
 function setupNavigation() {
     // === SIDEBAR TAB NAVIGATION ===
-    const navTabsContainer = document.querySelector('.nav-tabs');
-    if (navTabsContainer) {
-        navTabsContainer.addEventListener('click', (e) => {
-            const target = e.target.closest('.nav-tab');
-            if (target) {
-                const tabName = target.getAttribute('data-tab');
-                if (tabName) {
-                    switchNavTab(tabName);
-                }
+    document.querySelectorAll('.nav-tab[data-tab]').forEach((tab) => {
+        tab.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const tabName = this.getAttribute('data-tab');
+            console.log('[nav] tab clicked:', tabName);
+            if (tabName) {
+                switchNavTab(tabName);
             }
         });
-    }
+    });
     // === EDIT MODE BUTTONS (sidebar + mobile + training) ===
     const editModeButtons = document.querySelectorAll('.edit-mode-btn');
     editModeButtons.forEach((button) => {
