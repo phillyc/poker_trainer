@@ -1443,8 +1443,8 @@ h1 {
         display: flex;
     }
     
-    /* Show backdrop when nav is open */
-    .nav-backdrop {
+    /* Backdrop only visible when nav is open (via .show class) */
+    .nav-backdrop.show {
         display: block;
     }
     
@@ -1468,10 +1468,6 @@ h1 {
     
     .nav-bar.mobile-open {
         transform: translateX(0);
-    }
-    
-    .nav-backdrop.show {
-        display: block;
     }
     
     .nav-section {
