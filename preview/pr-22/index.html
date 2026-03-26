@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Poker Trainer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="design-tokens.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Mobile Navigation Toggle Button -->
+    <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span class="hamburger-icon">☰</span>
+        <span class="close-icon" style="display: none;">×</span>
+    </button>
+    
+    <!-- Navigation Backdrop (mobile only) -->
+    <div id="nav-backdrop" class="nav-backdrop"></div>
+    
+    <div class="app-layout">
+        <!-- Left Navigation Bar -->
+        <nav class="nav-bar" id="nav-bar">
+            <!-- Branding -->
+            <div class="nav-brand">
+                <span class="nav-brand-icon">🃏</span>
+                <span class="nav-brand-text">Poker Trainer</span>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="editor" title="Range Editor">
+                    <span class="nav-tab-icon">✎</span>
+                    <span class="nav-tab-label">Editor</span>
+                </button>
+                <button class="nav-tab" data-tab="library" title="Range Library">
+                    <span class="nav-tab-icon">📚</span>
+                    <span class="nav-tab-label">Library</span>
+                </button>
+                <button class="nav-tab" data-tab="practice" title="Practice & Training">
+                    <span class="nav-tab-icon">🎯</span>
+                    <span class="nav-tab-label">Practice</span>
+                </button>
+                <button class="nav-tab" data-tab="settings" title="Settings">
+                    <span class="nav-tab-icon">⚙</span>
+                    <span class="nav-tab-label">Settings</span>
+                </button>
+            </div>
+
+            <!-- Tab Content: Editor -->
+            <div class="nav-tab-content active" data-tab-content="editor">
+                <div class="nav-section">
+                    <h3>Paint Mode</h3>
+                    <div class="nav-paint-modes">
+                        <button class="edit-mode-btn" data-action="raise">Raise</button>
+                        <button class="edit-mode-btn" data-action="call">Call</button>
+                        <button class="edit-mode-btn" data-action="fold">Fold</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix R/F</button>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Quick Actions</h3>
+                    <div class="nav-quick-actions">
+                        <button id="select-all-btn" class="nav-button">✓✓ Select All</button>
+                        <button id="reset-btn" class="nav-button">⊗ Clear All</button>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Save Current Range</h3>
+                    <input type="text" id="range-name-input" class="range-input" placeholder="Enter range name..." maxlength="30">
+                    <button id="save-range-btn" class="nav-button save-button">Save Range</button>
+                </div>
+            </div>
+
+            <!-- Tab Content: Library -->
+            <div class="nav-tab-content" data-tab-content="library">
+                <div class="nav-section">
+                    <h3>Built-in Presets</h3>
+                    <div id="presets-container" class="presets-container">
+                        <!-- Preset buttons will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>My Saved Ranges</h3>
+                    <div id="saved-ranges-list" class="saved-ranges-list">
+                        <p class="empty-message">No saved ranges yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Practice -->
+            <div class="nav-tab-content" data-tab-content="practice">
+                <div class="nav-section">
+                    <h3>Start Training</h3>
+                    <p class="nav-help-text" id="practice-help-text">Load a range from the Library tab, then choose a training mode below.</p>
+                    <div class="nav-practice-modes">
+                        <button id="start-range-recall-btn" class="nav-button practice-mode-btn">
+                            <span class="practice-icon">🧠</span>
+                            Range Recall
+                        </button>
+                        <button id="start-spot-drill-btn" class="nav-button practice-mode-btn">
+                            <span class="practice-icon">⚡</span>
+                            Spot Drill
+                        </button>
+                        <button id="start-pot-odds-btn" class="nav-button practice-mode-btn">
+                            <span class="practice-icon">🎲</span>
+                            Pot Odds
+                        </button>
+                    </div>
+                </div>
+
+                <div class="nav-section train-only-nav" style="display: none;">
+                    <h3>Training Controls</h3>
+                    <button id="back-to-editor-btn" class="nav-button">← Back to Editor</button>
+                </div>
+            </div>
+
+            <!-- Tab Content: Settings -->
+            <div class="nav-tab-content" data-tab-content="settings">
+                <div class="nav-section">
+                    <h3>Display</h3>
+                    <p class="nav-help-text">Settings coming soon. Theme customization, grid display options, and more.</p>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="container">
+                <!-- Editor View (default) -->
+                <div id="editor-view" class="view-panel active">
+                    <h1>Texas Hold'em Range Trainer</h1>
+                    
+                    <!-- Mobile-only paint mode buttons (duplicated for mobile UX) -->
+                    <div class="mobile-paint-modes">
+                        <button class="edit-mode-btn" data-action="fold">Fold</button>
+                        <button class="edit-mode-btn" data-action="raise">Raise</button>
+                        <button class="edit-mode-btn" data-action="call">Call</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix R/F</button>
+                    </div>
+
+                    <!-- Range Grid -->
+                    <div id="range-grid" class="range-grid"></div>
+                    
+                    <!-- Stats -->
+                    <div class="stats">
+                        <p>Selected: <span id="selected-count">0.0% (Raise: 0.0%, Call: 0.0%, Mix RC: 0.0%, Mix RF: 0.0%) - 0 / 169</span> hands</p>
+                    </div>
+                </div>
+
+                <!-- Range Recall Training View -->
+                <div id="range-recall-view" class="view-panel train-only" style="display: none;">
+                    <h1>Range Recall</h1>
+                    <div id="train-range-info" class="train-range-info">
+                        <!-- Range name and description will be inserted here -->
+                    </div>
+                    <p class="train-instruction">Try to recreate the range from memory, then submit to check your accuracy!</p>
+                    
+                    <!-- Paint mode buttons for training -->
+                    <div class="edit-mode-buttons">
+                        <button class="edit-mode-btn" data-action="fold">Fold</button>
+                        <button class="edit-mode-btn" data-action="raise">Raise</button>
+                        <button class="edit-mode-btn" data-action="call">Call</button>
+                        <button class="edit-mode-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="edit-mode-btn" data-action="mix-rf">Mix R/F</button>
+                    </div>
+
+                    <!-- Range Grid (shared, moved here when in recall mode) -->
+                    <div id="train-grid-anchor"></div>
+
+                    <!-- Train Mode Controls -->
+                    <div class="train-controls">
+                        <button id="reset-train-btn" class="train-button reset-button">Reset</button>
+                        <button id="submit-train-btn" class="train-button submit-button">Submit</button>
+                    </div>
+                    
+                    <!-- Train Mode Results -->
+                    <div id="train-result" class="train-result" style="display: none;"></div>
+                </div>
+
+                <!-- Spot Drill Training View -->
+                <div id="spot-drill-view" class="view-panel train-only" style="display: none;">
+                    <h1>Spot Drill</h1>
+                    <div id="spot-drill-range-info" class="train-range-info">
+                        <!-- Range name and description will be inserted here -->
+                    </div>
+                    <div class="poker-table-container">
+                        <div class="poker-table">
+                            <!-- Seat positions: 8 seats around the table -->
+                            <div class="seat seat-1" data-seat="1"></div>
+                            <div class="seat seat-2" data-seat="2"></div>
+                            <div class="seat seat-3" data-seat="3"></div>
+                            <div class="seat seat-4" data-seat="4"></div>
+                            <div class="seat seat-5" data-seat="5"></div>
+                            <div class="seat seat-6" data-seat="6"></div>
+                            <div class="seat seat-7" data-seat="7"></div>
+                            <div class="seat seat-8 player-seat" data-seat="8">
+                                <div class="seat-label">You</div>
+                            </div>
+                            <div class="table-center">
+                                <div id="current-hand-display" class="current-hand"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="spot-drill-hand-display">
+                        <p class="spot-drill-instruction">Select the correct action for this hand:</p>
+                    </div>
+                    <div class="spot-drill-actions">
+                        <button class="spot-action-btn" data-action="raise">Raise</button>
+                        <button class="spot-action-btn" data-action="call">Call</button>
+                        <button class="spot-action-btn" data-action="fold">Fold</button>
+                        <button class="spot-action-btn" data-action="mix-rc">Mix R/C</button>
+                        <button class="spot-action-btn" data-action="mix-rf">Mix R/F</button>
+                    </div>
+                    <div class="spot-drill-progress">
+                        <p>Progress: <span id="spot-drill-progress-text">0 / 5</span></p>
+                    </div>
+                    <!-- Spot Drill Results -->
+                    <div id="spot-drill-result" class="spot-drill-result" style="display: none;"></div>
+                </div>
+
+                <!-- Pot Odds Training View -->
+                <div id="pot-odds-view" class="view-panel train-only" style="display: none;">
+                    <h1>Pot Odds Drill</h1>
+                    <div class="pot-odds-display">
+                        <div class="pot-odds-scenario">
+                            <div class="pot-amount">
+                                <span class="pot-label">POT</span>
+                                <span id="pot-value" class="pot-value">$0</span>
+                            </div>
+                            <div class="bet-amount">
+                                <span class="bet-label">BET</span>
+                                <span id="bet-value" class="bet-value">$0</span>
+                            </div>
+                        </div>
+                        <p class="pot-odds-instruction">What equity do you need to call?</p>
+                        <div class="pot-odds-options" id="pot-odds-options">
+                            <!-- Option buttons generated dynamically -->
+                        </div>
+                    </div>
+                    <div class="pot-odds-progress">
+                        <p>Progress: <span id="pot-odds-progress-text">0 / 10</span></p>
+                    </div>
+                    <!-- Pot Odds Results -->
+                    <div id="pot-odds-result" class="pot-odds-result" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
