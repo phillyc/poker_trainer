@@ -8,6 +8,7 @@ import { createRangeGrid, handleTouchEnd } from './grid';
 import { loadPresetsFromFile, loadPreset } from './presets';
 import { saveCurrentRange, renderSavedRanges } from './storage';
 import { switchMode, switchTrainingMode, handleSpotDrillAction, submitTraining, resetTraining } from './training';
+import { startPotOddsDrill } from './pot-odds';
 import { showToast, setupMobileNavigation } from './ui';
 
 /**
@@ -80,8 +81,11 @@ function setupNavigation(): void {
     if (modeToggle) {
         modeToggle.addEventListener('click', () => {
             if (currentMode === 'edit') {
-                if (Object.keys(getCurrentSelection()).length === 0) {
-                    showToast('Please select or load a range first before entering train mode.', 'error');
+                const hasRange = Object.keys(getCurrentSelection()).length > 0;
+                if (!hasRange) {
+                    // No range loaded — enter train mode with pot-odds as default
+                    switchMode('train');
+                    switchTrainingMode('pot-odds');
                     return;
                 }
                 switchMode('train');
@@ -114,6 +118,13 @@ function setupNavigation(): void {
     if (spotDrillBtn) {
         spotDrillBtn.addEventListener('click', () => {
             switchTrainingMode('spot-drill');
+        });
+    }
+    
+    const potOddsBtn = document.getElementById('pot-odds-btn');
+    if (potOddsBtn) {
+        potOddsBtn.addEventListener('click', () => {
+            switchTrainingMode('pot-odds');
         });
     }
     

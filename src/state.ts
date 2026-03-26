@@ -1,4 +1,4 @@
-import { HandAction, HandCell, PresetsData, AppMode, TrainingMode, SpotDrillState } from './types';
+import { HandAction, HandCell, PresetsData, AppMode, TrainingMode, SpotDrillState, PotOddsDrillState } from './types';
 
 // Store the state of all hands
 export const handsState: Map<string, HandCell> = new Map();
@@ -26,6 +26,9 @@ export let currentLoadedPresetKey: string = '';
 // Spot Drill state
 export let spotDrillState: SpotDrillState | null = null;
 
+// Pot Odds Drill state
+export let potOddsDrillState: PotOddsDrillState | null = null;
+
 // State setters (needed because ES modules export bindings, not references for let)
 export function setIsDragging(value: boolean): void { isDragging = value; }
 export function setDragAction(value: HandAction | null): void { dragAction = value; }
@@ -40,3 +43,4 @@ export function setTrainingRangeName(value: string): void { trainingRangeName = 
 export function setTrainingRangeDescription(value: string): void { trainingRangeDescription = value; }
 export function setCurrentLoadedPresetKey(value: string): void { currentLoadedPresetKey = value; }
 export function setSpotDrillState(value: SpotDrillState | null): void { spotDrillState = value; }
+export function setPotOddsDrillState(value: PotOddsDrillState | null): void { potOddsDrillState = value; }
