@@ -609,7 +609,7 @@ h1 {
 
 /* Mix RF button - burgundy/dark split */
 .edit-mode-btn[data-action="mix-rf"].active {
-    background: linear-gradient(to right, var(--action-raise) 0%, var(--action-raise) 50%, var(--surface-container-high) 50%, var(--surface-container-high) 100%);
+    background: linear-gradient(135deg, var(--action-raise) 50%, var(--surface-container-high) 50%);
     border-color: var(--primary-container);
     color: var(--on-surface);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
@@ -671,16 +671,29 @@ h1 {
 }
 
 .legend-box.mix-rf {
-    background: linear-gradient(to right, var(--action-raise) 0%, var(--action-raise) 50%, var(--surface-container-high) 50%, var(--surface-container-high) 100%);
+    background: linear-gradient(135deg, var(--action-raise) 50%, var(--surface-container-high) 50%);
 }
 
+/* === RANGE GRID === */
 .range-grid {
     display: grid;
     grid-template-columns: repeat(13, 1fr);
-    gap: 4px;
+    gap: var(--grid-gap);
     margin: 0 auto;
     max-width: 650px;
     touch-action: none; /* Prevent scrolling during drag */
+    background: var(--surface-container-lowest);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--outline-variant);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 768px) {
+    .range-grid {
+        gap: var(--grid-gap-md);
+        padding: var(--space-4);
+    }
 }
 
 .hand-cell {
@@ -688,41 +701,48 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--outline-variant);
-    border-radius: var(--radius);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-sm);
     font-family: var(--font-label);
-    font-weight: var(--font-bold);
-    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-xs);
     cursor: pointer;
-    transition: background-color var(--transition-normal), border-color var(--transition-normal), color var(--transition-normal);
+    transition: all var(--transition-normal);
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    background-color: var(--surface-container);
+    background-color: var(--surface-container-low);
     color: var(--on-surface-variant);
     touch-action: none; /* Prevent scrolling during drag */
-    min-width: 44px; /* Minimum touch target size */
-    min-height: 44px;
+    min-width: var(--cell-min-size);
+    min-height: var(--cell-min-size);
+}
+
+@media (min-width: 768px) {
+    .hand-cell {
+        font-size: var(--text-sm);
+    }
 }
 
 .hand-cell:active {
-    transform: scale(0.95);
+    transform: scale(0.93);
     transition: transform 0.1s ease;
 }
 
 .hand-cell:hover {
-    transform: scale(1.05);
+    filter: brightness(1.2);
     box-shadow: var(--shadow-grid-cell);
     z-index: 10;
     position: relative;
+    border-color: var(--primary);
 }
 
-/* Action-based coloring */
+/* === ACTION-BASED CELL COLORING === */
 
-/* Fold action - neutral dark */
+/* Fold action - neutral dark (default) */
 .hand-cell.action-fold {
-    background-color: var(--surface-container);
+    background-color: var(--surface-container-low);
     color: var(--on-surface-variant);
     border-color: var(--outline-variant);
 }
@@ -731,30 +751,32 @@ h1 {
 .hand-cell.action-raise {
     background-color: var(--action-raise);
     color: var(--on-surface);
-    border-color: rgba(124, 58, 58, 0.6);
+    border-color: rgba(124, 58, 58, 0.8);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Call action - sage */
 .hand-cell.action-call {
     background-color: var(--action-call);
     color: var(--on-surface);
-    border-color: rgba(90, 122, 108, 0.6);
+    border-color: rgba(90, 122, 108, 0.8);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Mix RC action - burgundy/sage split */
+/* Mix RC action - burgundy/sage diagonal split */
 .hand-cell.action-mix-rc {
     background: var(--action-mix-bg);
     color: var(--on-surface);
     border-color: var(--primary-container);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 /* Mix RF action - burgundy/dark split */
 .hand-cell.action-mix-rf {
-    background: linear-gradient(to right, var(--action-raise) 0%, var(--action-raise) 50%, var(--surface-container-high) 50%, var(--surface-container-high) 100%);
+    background: linear-gradient(135deg, var(--action-raise) 50%, var(--surface-container-high) 50%);
     color: var(--on-surface);
     border-color: var(--primary-container);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .stats {
@@ -899,19 +921,22 @@ h1 {
 /* Training Feedback on Grid */
 .hand-cell.train-correct {
     border-color: var(--secondary) !important;
-    border-width: 4px !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 8px rgba(173, 206, 190, 0.4) !important;
     animation: pulse-correct 3s ease-in-out infinite;
 }
 
 .hand-cell.train-incorrect {
     border-color: var(--error) !important;
-    border-width: 4px !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 8px rgba(255, 180, 171, 0.4) !important;
     animation: pulse-incorrect 3s ease-in-out infinite;
 }
 
 .hand-cell.train-missed {
     border-color: var(--primary) !important;
-    border-width: 4px !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 8px rgba(221, 195, 156, 0.4) !important;
     animation: pulse-missed 3s ease-in-out infinite;
 }
 
@@ -1207,7 +1232,7 @@ h1 {
 
 /* Mix RF button - burgundy/dark split */
 .spot-action-btn[data-action="mix-rf"]:hover {
-    background: linear-gradient(to right, var(--action-raise) 0%, var(--action-raise) 50%, var(--surface-container-high) 50%, var(--surface-container-high) 100%);
+    background: linear-gradient(135deg, var(--action-raise) 50%, var(--surface-container-high) 50%);
     border-color: var(--primary-container);
     box-shadow: 0 4px 12px rgba(124, 58, 58, 0.4);
     color: var(--on-surface);
@@ -1418,8 +1443,8 @@ h1 {
         display: flex;
     }
     
-    /* Show backdrop when nav is open */
-    .nav-backdrop {
+    /* Backdrop only visible when nav is open (via .show class) */
+    .nav-backdrop.show {
         display: block;
     }
     
@@ -1443,10 +1468,6 @@ h1 {
     
     .nav-bar.mobile-open {
         transform: translateX(0);
-    }
-    
-    .nav-backdrop.show {
-        display: block;
     }
     
     .nav-section {
@@ -1480,15 +1501,16 @@ h1 {
     
     /* Optimize grid for mobile */
     .range-grid {
-        gap: 3px;
+        gap: 1px;
         max-width: 100%;
+        padding: var(--space-2);
     }
     
     .hand-cell {
-        font-size: clamp(0.65em, 2vw, 0.85em);
-        border-width: 2px;
-        min-width: 44px;
-        min-height: 44px;
+        font-size: clamp(0.6em, 2vw, 0.8em);
+        border-width: 1px;
+        min-width: 28px;
+        min-height: 28px;
     }
     
     /* Edit mode buttons - stack on very small screens */
@@ -1678,11 +1700,14 @@ h1 {
     }
     
     .range-grid {
-        gap: 2px;
+        gap: 1px;
+        padding: var(--space-1);
     }
     
     .hand-cell {
-        font-size: clamp(0.6em, 2vw, 0.75em);
+        font-size: clamp(0.55em, 1.8vw, 0.7em);
+        min-width: 24px;
+        min-height: 24px;
     }
     
     .edit-mode-btn {
