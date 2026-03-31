@@ -1,4 +1,23 @@
 (() => {
+  var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   var __async = (__this, __arguments, generator) => {
     return new Promise((resolve, reject) => {
       var fulfilled = (value) => {
@@ -82,8 +101,10 @@
   // src/actions.ts
   function setHandAction(hand, action) {
     const handState = handsState.get(hand);
-    if (!handState) return;
-    if (handState.action === action) return;
+    if (!handState)
+      return;
+    if (handState.action === action)
+      return;
     handState.action = action;
     const cell = document.querySelector(`[data-hand="${hand}"]`);
     if (cell) {
@@ -169,13 +190,15 @@
   function handleMouseDown(hand, event) {
     event.preventDefault();
     const handState = handsState.get(hand);
-    if (!handState) return;
+    if (!handState)
+      return;
     setIsDragging(true);
     setDragAction(currentEditMode);
     setHandAction(hand, currentEditMode);
   }
   function handleMouseEnter(hand) {
-    if (!isDragging || dragAction === null) return;
+    if (!isDragging || dragAction === null)
+      return;
     setHandAction(hand, dragAction);
   }
   function handleTouchStart(hand, event) {
@@ -183,13 +206,15 @@
     setIsTouching(true);
     setLastTouchedHand(hand);
     const handState = handsState.get(hand);
-    if (!handState) return;
+    if (!handState)
+      return;
     setIsDragging(true);
     setDragAction(currentEditMode);
     setHandAction(hand, currentEditMode);
   }
   function handleTouchMove(hand, event) {
-    if (!isTouching || !isDragging || dragAction === null) return;
+    if (!isTouching || !isDragging || dragAction === null)
+      return;
     event.preventDefault();
     const touch = event.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -209,7 +234,8 @@
   }
   function createRangeGrid() {
     const gridContainer = document.getElementById("range-grid");
-    if (!gridContainer) return;
+    if (!gridContainer)
+      return;
     for (let row = 0; row < 13; row++) {
       for (let col = 0; col < 13; col++) {
         const { hand, type } = getHandInfo(row, col);
@@ -248,7 +274,8 @@
   }
   function renderPresetButtons() {
     const container = document.getElementById("presets-container");
-    if (!container) return;
+    if (!container)
+      return;
     container.innerHTML = "";
     const presetKeys = Object.keys(loadedPresets).sort();
     if (presetKeys.length === 0) {
@@ -322,7 +349,8 @@
   // src/ui.ts
   function showToast(message, type) {
     const container = document.getElementById("toast-container");
-    if (!container) return;
+    if (!container)
+      return;
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -387,19 +415,24 @@
     const navBackdrop = document.getElementById("nav-backdrop");
     const hamburgerIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".hamburger-icon");
     const closeIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".close-icon");
-    if (!mobileNavToggle || !navBar || !navBackdrop) return;
+    if (!mobileNavToggle || !navBar || !navBackdrop)
+      return;
     function openNav() {
       navBar.classList.add("mobile-open");
       navBackdrop.classList.add("show");
-      if (hamburgerIcon) hamburgerIcon.style.display = "none";
-      if (closeIcon) closeIcon.style.display = "block";
+      if (hamburgerIcon)
+        hamburgerIcon.style.display = "none";
+      if (closeIcon)
+        closeIcon.style.display = "block";
       document.body.style.overflow = "hidden";
     }
     function closeNav() {
       navBar.classList.remove("mobile-open");
       navBackdrop.classList.remove("show");
-      if (hamburgerIcon) hamburgerIcon.style.display = "block";
-      if (closeIcon) closeIcon.style.display = "none";
+      if (hamburgerIcon)
+        hamburgerIcon.style.display = "block";
+      if (closeIcon)
+        closeIcon.style.display = "none";
       document.body.style.overflow = "";
     }
     mobileNavToggle.addEventListener("click", () => {
@@ -431,7 +464,8 @@
   function getSavedRanges() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
+      if (!stored)
+        return [];
       return JSON.parse(stored);
     } catch (error) {
       console.error("Error reading saved ranges:", error);
@@ -576,7 +610,8 @@
   }
   function renderSavedRanges() {
     const container = document.getElementById("saved-ranges-list");
-    if (!container) return;
+    if (!container)
+      return;
     const ranges = getSavedRanges();
     if (ranges.length === 0) {
       container.innerHTML = '<p class="empty-message">No saved ranges yet</p>';
@@ -621,6 +656,43 @@
 
   // src/pot-odds.ts
   var BATCH_SIZE = 10;
+  var EASY_COMBOS = [
+    // ½ pot → 25%
+    { pot: 100, bet: 50, equity: 25 },
+    { pot: 200, bet: 100, equity: 25 },
+    { pot: 400, bet: 200, equity: 25 },
+    { pot: 50, bet: 25, equity: 25 },
+    { pot: 80, bet: 40, equity: 25 },
+    // pot (1x) → 33%
+    { pot: 100, bet: 100, equity: 33 },
+    { pot: 50, bet: 50, equity: 33 },
+    { pot: 200, bet: 200, equity: 33 },
+    { pot: 30, bet: 30, equity: 33 },
+    // 2x pot → 40%
+    { pot: 100, bet: 200, equity: 40 },
+    { pot: 50, bet: 100, equity: 40 },
+    { pot: 200, bet: 400, equity: 40 },
+    // ¾ pot → 43% (rounds to 43)
+    { pot: 100, bet: 75, equity: 43 },
+    { pot: 200, bet: 150, equity: 43 },
+    { pot: 80, bet: 60, equity: 43 }
+  ];
+  var HELP_HTML = `
+<div class="pot-odds-help-content">
+    <p><strong>Pot odds</strong> tell you how often you need to win for a call to break even.</p>
+    <p><strong>Formula:</strong><br>
+    Equity Needed = Bet \xF7 (Pot + Bet + Your Call)</p>
+    <p><strong>Simplified (same math):</strong><br>
+    Equity Needed = Bet \xF7 (Pot + Bet\xD72)</p>
+    <div class="pot-odds-help-example">
+        <strong>Example:</strong><br>
+        Pot: $100 | Bet: $50<br>
+        Equity = 50 \xF7 (100 + 50 + 50)<br>
+        Equity = 50 \xF7 200 = <strong>25%</strong><br>
+        You need at least 25% equity to call.
+    </div>
+</div>
+`;
   function randomPot() {
     const r = Math.random();
     let base;
@@ -642,13 +714,53 @@
     }
     return 0.25 + Math.random() * 1.75;
   }
-  function generatePotOddsProblem() {
+  function generatePotOddsProblem(difficulty) {
+    if (difficulty === "easy") {
+      const combo = EASY_COMBOS[Math.floor(Math.random() * EASY_COMBOS.length)];
+      const options2 = generateEasyOptions(combo.equity);
+      return {
+        pot: combo.pot,
+        bet: combo.bet,
+        correctEquity: combo.equity,
+        options: options2
+      };
+    }
     const pot = randomPot();
     const betFraction = randomBetFraction();
     const bet = Math.round(pot * betFraction);
     const correctEquity = Math.round(bet / (pot + bet + bet) * 100);
     const options = generateOptions(correctEquity, pot, bet);
     return { pot, bet, correctEquity, options };
+  }
+  function generateEasyOptions(correct) {
+    const distractors = /* @__PURE__ */ new Set();
+    distractors.add(correct);
+    const mistakeMap = {
+      25: [33, 20, 40],
+      // forgetting to include call
+      33: [50, 25, 43],
+      // thinking it's half
+      40: [50, 33, 25],
+      // bet/pot instead of bet/(pot+2*bet)
+      43: [33, 50, 25]
+      // rounding error
+    };
+    const mistakes = mistakeMap[correct] || [correct - 5, correct + 5, correct + 10];
+    for (const m of mistakes) {
+      if (distractors.size < 4 && m >= 10 && m <= 60)
+        distractors.add(m);
+    }
+    while (distractors.size < 4) {
+      const r = 10 + Math.floor(Math.random() * 51);
+      if (r !== correct)
+        distractors.add(r);
+    }
+    const arr = Array.from(distractors);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
   function generateOptions(correct, pot, bet) {
     const options = /* @__PURE__ */ new Set();
@@ -690,26 +802,76 @@
     }
     return arr;
   }
-  function generateBatch(size) {
+  function generateBatch(size, difficulty) {
     const problems = [];
     for (let i = 0; i < size; i++) {
-      problems.push(generatePotOddsProblem());
+      problems.push(generatePotOddsProblem(difficulty));
     }
     return problems;
   }
   function formatDollars(amount) {
     return "$" + amount.toLocaleString();
   }
+  function setDifficulty(difficulty) {
+    if (!potOddsDrillState)
+      return;
+    potOddsDrillState.difficulty = difficulty;
+    updateDifficultyToggle();
+    updateHelpVisibility();
+    restartWithNewDifficulty(difficulty);
+  }
+  function restartWithNewDifficulty(difficulty) {
+    const problems = generateBatch(BATCH_SIZE, difficulty);
+    setPotOddsDrillState(__spreadProps(__spreadValues({}, potOddsDrillState), {
+      problems,
+      currentIndex: 0,
+      correctAnswers: 0,
+      totalAttempts: 0,
+      results: [],
+      questionStartTime: Date.now(),
+      difficulty
+    }));
+    const resultDiv = document.getElementById("pot-odds-result");
+    if (resultDiv)
+      resultDiv.style.display = "none";
+    const drillMode = document.querySelector(".pot-odds-mode");
+    if (drillMode)
+      drillMode.style.display = "block";
+    displayCurrentProblem();
+  }
+  function updateDifficultyToggle() {
+    if (!potOddsDrillState)
+      return;
+    const easyBtn = document.getElementById("pot-odds-easy-btn");
+    const normalBtn = document.getElementById("pot-odds-normal-btn");
+    if (easyBtn && normalBtn) {
+      easyBtn.classList.toggle("active", potOddsDrillState.difficulty === "easy");
+      normalBtn.classList.toggle("active", potOddsDrillState.difficulty === "normal");
+    }
+  }
+  function updateHelpVisibility() {
+    if (!potOddsDrillState)
+      return;
+    const helpPanel = document.getElementById("pot-odds-help");
+    if (helpPanel) {
+      const isEasy = potOddsDrillState.difficulty === "easy";
+      helpPanel.style.display = isEasy ? "block" : "none";
+    }
+  }
   function displayCurrentProblem() {
-    if (!potOddsDrillState) return;
+    if (!potOddsDrillState)
+      return;
     const problem = potOddsDrillState.problems[potOddsDrillState.currentIndex];
-    if (!problem) return;
+    if (!problem)
+      return;
     const potValue = document.getElementById("pot-value");
     const betValue = document.getElementById("bet-value");
     const optionsContainer = document.getElementById("pot-odds-options");
     const progressText = document.getElementById("pot-odds-progress-text");
-    if (potValue) potValue.textContent = formatDollars(problem.pot);
-    if (betValue) betValue.textContent = formatDollars(problem.bet);
+    if (potValue)
+      potValue.textContent = formatDollars(problem.pot);
+    if (betValue)
+      betValue.textContent = formatDollars(problem.bet);
     if (optionsContainer) {
       optionsContainer.innerHTML = "";
       problem.options.forEach((equity) => {
@@ -727,7 +889,8 @@
     potOddsDrillState.questionStartTime = Date.now();
   }
   function startPotOddsDrill() {
-    const problems = generateBatch(BATCH_SIZE);
+    const difficulty = "normal";
+    const problems = generateBatch(BATCH_SIZE, difficulty);
     setPotOddsDrillState({
       problems,
       currentIndex: 0,
@@ -735,18 +898,83 @@
       totalAttempts: 0,
       results: [],
       questionStartTime: Date.now(),
-      batchSize: BATCH_SIZE
+      batchSize: BATCH_SIZE,
+      difficulty
     });
+    injectHelpPanel();
+    injectDifficultyToggle();
     const resultDiv = document.getElementById("pot-odds-result");
-    if (resultDiv) resultDiv.style.display = "none";
+    if (resultDiv)
+      resultDiv.style.display = "none";
     const drillMode = document.querySelector(".pot-odds-mode");
-    if (drillMode) drillMode.style.display = "block";
+    if (drillMode)
+      drillMode.style.display = "block";
+    updateDifficultyToggle();
+    updateHelpVisibility();
     displayCurrentProblem();
   }
+  function injectDifficultyToggle() {
+    var _a, _b;
+    if (document.getElementById("pot-odds-difficulty"))
+      return;
+    const drillMode = document.querySelector(".pot-odds-mode");
+    if (!drillMode)
+      return;
+    const container = document.createElement("div");
+    container.id = "pot-odds-difficulty";
+    container.className = "pot-odds-difficulty";
+    container.innerHTML = `
+        <button id="pot-odds-easy-btn" class="difficulty-btn">Easy</button>
+        <button id="pot-odds-normal-btn" class="difficulty-btn active">Normal</button>
+    `;
+    const display = drillMode.querySelector(".pot-odds-display");
+    if (display) {
+      display.insertBefore(container, display.firstChild);
+    }
+    (_a = document.getElementById("pot-odds-easy-btn")) == null ? void 0 : _a.addEventListener("click", () => setDifficulty("easy"));
+    (_b = document.getElementById("pot-odds-normal-btn")) == null ? void 0 : _b.addEventListener("click", () => setDifficulty("normal"));
+  }
+  function injectHelpPanel() {
+    var _a;
+    if (document.getElementById("pot-odds-help"))
+      return;
+    const drillMode = document.querySelector(".pot-odds-mode");
+    if (!drillMode)
+      return;
+    const panel = document.createElement("div");
+    panel.id = "pot-odds-help";
+    panel.className = "pot-odds-help";
+    panel.innerHTML = `
+        <div class="pot-odds-help-header">
+            <span class="pot-odds-help-title">How to Calculate Pot Odds</span>
+            <button id="pot-odds-help-toggle" class="pot-odds-help-toggle" aria-label="Toggle help">\u2212</button>
+        </div>
+        ${HELP_HTML}
+    `;
+    const display = drillMode.querySelector(".pot-odds-display");
+    if (display) {
+      display.insertBefore(panel, display.children[1]);
+    }
+    (_a = document.getElementById("pot-odds-help-toggle")) == null ? void 0 : _a.addEventListener("click", () => {
+      const content2 = panel.querySelector(".pot-odds-help-content");
+      const toggle = document.getElementById("pot-odds-help-toggle");
+      if (content2) {
+        const isHidden = content2.style.display === "none";
+        content2.style.display = isHidden ? "block" : "none";
+        if (toggle)
+          toggle.textContent = isHidden ? "\u2212" : "+";
+      }
+    });
+    const content = panel.querySelector(".pot-odds-help-content");
+    if (content)
+      content.style.display = "block";
+  }
   function handlePotOddsAnswer(userAnswer) {
-    if (!potOddsDrillState) return;
+    if (!potOddsDrillState)
+      return;
     const problem = potOddsDrillState.problems[potOddsDrillState.currentIndex];
-    if (!problem) return;
+    if (!problem)
+      return;
     const responseTimeMs = Date.now() - potOddsDrillState.questionStartTime;
     const correct = userAnswer === problem.correctEquity;
     potOddsDrillState.results.push({
@@ -781,7 +1009,8 @@
     }
     potOddsDrillState.currentIndex++;
     setTimeout(() => {
-      if (!potOddsDrillState) return;
+      if (!potOddsDrillState)
+        return;
       if (potOddsDrillState.currentIndex >= potOddsDrillState.batchSize) {
         showPotOddsResults();
       } else {
@@ -790,9 +1019,11 @@
     }, 1e3);
   }
   function showPotOddsResults() {
-    if (!potOddsDrillState) return;
+    if (!potOddsDrillState)
+      return;
     const resultDiv = document.getElementById("pot-odds-result");
-    if (!resultDiv) return;
+    if (!resultDiv)
+      return;
     const accuracy = potOddsDrillState.totalAttempts > 0 ? (potOddsDrillState.correctAnswers / potOddsDrillState.totalAttempts * 100).toFixed(1) : "0.0";
     const avgTime = potOddsDrillState.results.length > 0 ? (potOddsDrillState.results.reduce((sum, r) => sum + r.responseTimeMs, 0) / potOddsDrillState.results.length / 1e3).toFixed(1) : "0.0";
     let breakdownHtml = '<div class="pot-odds-breakdown">';
@@ -821,20 +1052,23 @@
     `;
     resultDiv.style.display = "block";
     const drillMode = document.querySelector(".pot-odds-mode");
-    if (drillMode) drillMode.style.display = "none";
+    if (drillMode)
+      drillMode.style.display = "none";
     const continueBtn = document.getElementById("pot-odds-continue-btn");
     const restartBtn = document.getElementById("pot-odds-restart-btn");
     if (continueBtn) {
       continueBtn.addEventListener("click", () => {
-        if (!potOddsDrillState) return;
-        const newProblems = generateBatch(BATCH_SIZE);
+        if (!potOddsDrillState)
+          return;
+        const newProblems = generateBatch(BATCH_SIZE, potOddsDrillState.difficulty);
         potOddsDrillState.problems = newProblems;
         potOddsDrillState.currentIndex = 0;
         potOddsDrillState.results = [];
         potOddsDrillState.correctAnswers = 0;
         potOddsDrillState.totalAttempts = 0;
         resultDiv.style.display = "none";
-        if (drillMode) drillMode.style.display = "block";
+        if (drillMode)
+          drillMode.style.display = "block";
         displayCurrentProblem();
       });
     }
@@ -853,7 +1087,8 @@
     const trainElements = document.querySelectorAll(".train-only");
     const modeToggle = document.getElementById("mode-toggle");
     if (mode === "train") {
-      if (navBar) navBar.style.display = "block";
+      if (navBar)
+        navBar.style.display = "block";
       const navSections = navBar.querySelectorAll(".nav-section");
       navSections.forEach((section, index) => {
         if (index > 0) {
@@ -888,9 +1123,11 @@
       resetAll();
       setEditMode(currentEditMode);
       updateTrainingModeDisplay();
-      if (modeToggle) modeToggle.textContent = "\u2190 Back to Edit Mode";
+      if (modeToggle)
+        modeToggle.textContent = "\u2190 Back to Edit Mode";
     } else {
-      if (navBar) navBar.style.display = "block";
+      if (navBar)
+        navBar.style.display = "block";
       const navSections = navBar.querySelectorAll(".nav-section");
       navSections.forEach((section) => {
         section.style.display = "block";
@@ -910,7 +1147,8 @@
       setSpotDrillState(null);
       setPotOddsDrillState(null);
       setEditMode(currentEditMode);
-      if (modeToggle) modeToggle.textContent = "Switch to Train Mode \u2192";
+      if (modeToggle)
+        modeToggle.textContent = "Switch to Train Mode \u2192";
     }
   }
   function switchTrainingMode(mode) {
@@ -939,32 +1177,52 @@
     const rangeRecallBtn = document.getElementById("range-recall-btn");
     const spotDrillBtn = document.getElementById("spot-drill-btn");
     const potOddsBtn = document.getElementById("pot-odds-btn");
-    if (rangeRecallBtn) rangeRecallBtn.classList.remove("active");
-    if (spotDrillBtn) spotDrillBtn.classList.remove("active");
-    if (potOddsBtn) potOddsBtn.classList.remove("active");
-    if (rangeRecallMode) rangeRecallMode.style.display = "none";
-    if (spotDrillMode) spotDrillMode.style.display = "none";
-    if (potOddsMode) potOddsMode.style.display = "none";
-    if (rangeGrid) rangeGrid.style.display = "none";
-    if (trainControls) trainControls.style.display = "none";
-    if (trainResult) trainResult.style.display = "none";
-    if (spotDrillResult) spotDrillResult.style.display = "none";
-    if (potOddsResult) potOddsResult.style.display = "none";
+    if (rangeRecallBtn)
+      rangeRecallBtn.classList.remove("active");
+    if (spotDrillBtn)
+      spotDrillBtn.classList.remove("active");
+    if (potOddsBtn)
+      potOddsBtn.classList.remove("active");
+    if (rangeRecallMode)
+      rangeRecallMode.style.display = "none";
+    if (spotDrillMode)
+      spotDrillMode.style.display = "none";
+    if (potOddsMode)
+      potOddsMode.style.display = "none";
+    if (rangeGrid)
+      rangeGrid.style.display = "none";
+    if (trainControls)
+      trainControls.style.display = "none";
+    if (trainResult)
+      trainResult.style.display = "none";
+    if (spotDrillResult)
+      spotDrillResult.style.display = "none";
+    if (potOddsResult)
+      potOddsResult.style.display = "none";
     if (currentTrainingMode === "spot-drill") {
-      if (spotDrillMode) spotDrillMode.style.display = "block";
-      if (spotDrillBtn) spotDrillBtn.classList.add("active");
+      if (spotDrillMode)
+        spotDrillMode.style.display = "block";
+      if (spotDrillBtn)
+        spotDrillBtn.classList.add("active");
     } else if (currentTrainingMode === "pot-odds") {
-      if (potOddsMode) potOddsMode.style.display = "block";
-      if (potOddsBtn) potOddsBtn.classList.add("active");
+      if (potOddsMode)
+        potOddsMode.style.display = "block";
+      if (potOddsBtn)
+        potOddsBtn.classList.add("active");
     } else {
-      if (rangeRecallMode) rangeRecallMode.style.display = "block";
-      if (rangeGrid) rangeGrid.style.display = "grid";
-      if (trainControls) trainControls.style.display = "flex";
-      if (rangeRecallBtn) rangeRecallBtn.classList.add("active");
+      if (rangeRecallMode)
+        rangeRecallMode.style.display = "block";
+      if (rangeGrid)
+        rangeGrid.style.display = "grid";
+      if (trainControls)
+        trainControls.style.display = "flex";
+      if (rangeRecallBtn)
+        rangeRecallBtn.classList.add("active");
     }
   }
   function generateHandsQueue(count, excludeHands) {
-    if (!trainingRange) return [];
+    if (!trainingRange)
+      return [];
     let hands = Object.keys(trainingRange);
     if (excludeHands && excludeHands.length > 0) {
       const excludeSet = new Set(excludeHands);
@@ -977,7 +1235,8 @@
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
   function startSpotDrill() {
-    if (!trainingRange) return;
+    if (!trainingRange)
+      return;
     const initialHands = generateHandsQueue(INITIAL_HANDS_COUNT);
     setSpotDrillState({
       handsQueue: initialHands,
@@ -989,7 +1248,8 @@
     displayNextHand();
     updateSpotDrillProgress();
     const resultDiv = document.getElementById("spot-drill-result");
-    if (resultDiv) resultDiv.style.display = "none";
+    if (resultDiv)
+      resultDiv.style.display = "none";
   }
   function stopSpotDrill() {
     setSpotDrillState(null);
@@ -1072,7 +1332,8 @@
     }
   }
   function handleSpotDrillAction(action) {
-    if (!spotDrillState || !trainingRange) return;
+    if (!spotDrillState || !trainingRange)
+      return;
     const currentHand = spotDrillState.handsQueue[spotDrillState.currentHandIndex];
     const correctAction = trainingRange[currentHand];
     const isCorrect = action === correctAction;
@@ -1096,7 +1357,8 @@
     }, 1e3);
   }
   function updateSpotDrillProgress() {
-    if (!spotDrillState) return;
+    if (!spotDrillState)
+      return;
     const progressText = document.getElementById("spot-drill-progress-text");
     if (progressText) {
       const completed = spotDrillState.currentHandIndex;
@@ -1106,9 +1368,11 @@
   }
   function showSpotDrillResults() {
     var _a, _b;
-    if (!spotDrillState) return;
+    if (!spotDrillState)
+      return;
     const resultDiv = document.getElementById("spot-drill-result");
-    if (!resultDiv) return;
+    if (!resultDiv)
+      return;
     const accuracy = spotDrillState.totalAttempts > 0 ? (spotDrillState.correctAnswers / spotDrillState.totalAttempts * 100).toFixed(1) : "0.0";
     const resultsHtml = `
         <h3>Spot Drill Results</h3>
@@ -1149,7 +1413,8 @@
     }
   }
   function submitTraining() {
-    if (!trainingRange) return;
+    if (!trainingRange)
+      return;
     const userAttempt = getCurrentSelection();
     let correct = 0;
     let incorrect = 0;
@@ -1167,20 +1432,24 @@
       const cell = document.querySelector(`[data-hand="${hand}"]`);
       if (userAction === correctAction) {
         correct++;
-        if (cell) cell.classList.add("train-correct");
+        if (cell)
+          cell.classList.add("train-correct");
       } else if (userAction && userAction !== correctAction) {
         incorrect++;
-        if (cell) cell.classList.add("train-incorrect");
+        if (cell)
+          cell.classList.add("train-incorrect");
       } else {
         missed++;
-        if (cell) cell.classList.add("train-missed");
+        if (cell)
+          cell.classList.add("train-missed");
       }
     });
     Object.keys(userAttempt).forEach((hand) => {
       if (!trainingRange[hand]) {
         incorrect++;
         const cell = document.querySelector(`[data-hand="${hand}"]`);
-        if (cell) cell.classList.add("train-incorrect");
+        if (cell)
+          cell.classList.add("train-incorrect");
       }
     });
     const accuracy = totalHands > 0 ? (correct / totalHands * 100).toFixed(1) : "0.0";
