@@ -1,0 +1,116 @@
+name: Auto Approve & Merge
+
+on:
+  pull_request:
+    types: [labeled]
+  check_suite:
+    types: [completed, requested]
+
+# Only run one auto-merge at a time per PR
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: read
+
+jobs:
+  auto-merge:
+    # Only act when the 'automerge' label is present
+    if: contains(github.event.pull_request.labels.*.name, 'automerge')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check merge eligibility
+        id: eligibility
+        run: |
+          echo "PR: #${{ github.event.pull_request.number }}"
+          echo "Title: ${{ github.event.pull_request.title }}"
+          echo "Author: ${{ github.event.pull_request.user.login }}"
+          echo "Base: ${{ github.event.pull_request.base.ref }}"
+          echo "Head: ${{ github.event.pull_request.head.ref }}"
+
+          # Only merge to main
+          if [[ "${{ github.event.pull_request.base.ref }}" != "main" ]]; then
+            echo "❌ Not targeting main — skipping"
+            exit 1
+          fi
+
+          # Check PR is not draft
+          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+            echo "❌ Draft PR — skipping"
+            exit 1
+          fi
+
+          echo "✅ Eligible for auto-merge"
+
+      - name: Wait for CI
+        id: wait-ci
+        run: |
+          echo "Waiting for all status checks to complete..."
+          # Poll up to 30 times, 20 seconds each = 10 minutes max
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Check $ATTEMPT/$MAX_ATTEMPTS..."
+
+            # Get all status checks for this PR
+            STATUSES=$(curl -s -L \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/statuses")
+
+            # Get the latest combined status
+            COMBINED=$(curl -s -L \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}")
+
+            STATE=$(echo "$COMBINED" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state','unknown'))")
+
+            echo "Combined state: $STATE"
+
+            if [[ "$STATE" == "success" ]]; then
+              echo "✅ All checks passed!"
+              exit 0
+            elif [[ "$STATE" == "failure" ]]; then
+              echo "❌ Some checks failed — auto-merge aborted"
+              exit 2
+            fi
+
+            echo "Still running... waiting 20s"
+            sleep 20
+          done
+
+          echo "⏰ Timed out waiting for CI"
+          exit 3
+
+      - name: Auto Merge
+        if: steps.wait-ci.outcome == 'success'
+        run: |
+          echo "Attempting auto-merge..."
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --squash \
+            --delete-branch \
+            --comment "✅ Auto-merged by GitHub Actions (automerge label)"
+          echo "✅ Merge complete!"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify failure
+        if: steps.wait-ci.outcome == 'failure'
+        run: |
+          echo "❌ Auto-merge aborted — checks did not pass"
+          # Optionally post a comment
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "⚠️ Auto-merge label applied but CI failed. Manual review required."
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
