@@ -1,64 +1,129 @@
-import { PotOddsProblem, PotOddsDrillState } from './types';
+import { PotOddsProblem, PotOddsDrillState, PotOddsDifficulty } from './types';
 import { potOddsDrillState, setPotOddsDrillState } from './state';
 import { showToast } from './ui';
 
 const BATCH_SIZE = 10;
 
-/**
- * Generate a random pot amount between $20 and $5000 with messy numbers
- */
+// ─── Easy Mode Preset Combinations ───────────────────────────────────────────
+// These produce clean integer equity values: bet / (pot + bet*2)
+// Equity = 25%, 33%, 40%, 43% are the most common.
+const EASY_COMBOS: { pot: number; bet: number; equity: number }[] = [
+    // ½ pot → 25%
+    { pot: 100, bet: 50,  equity: 25 },
+    { pot: 200, bet: 100, equity: 25 },
+    { pot: 400, bet: 200, equity: 25 },
+    { pot:  50, bet: 25,  equity: 25 },
+    { pot:  80, bet: 40,  equity: 25 },
+    // pot (1x) → 33%
+    { pot: 100, bet: 100, equity: 33 },
+    { pot:  50, bet:  50, equity: 33 },
+    { pot: 200, bet: 200, equity: 33 },
+    { pot:  30, bet:  30, equity: 33 },
+    // 2x pot → 40%
+    { pot: 100, bet: 200, equity: 40 },
+    { pot:  50, bet: 100, equity: 40 },
+    { pot: 200, bet: 400, equity: 40 },
+    // ¾ pot → 43% (rounds to 43)
+    { pot: 100, bet:  75, equity: 43 },
+    { pot: 200, bet: 150, equity: 43 },
+    { pot:  80, bet:  60, equity: 43 },
+];
+
+const HELP_HTML = `
+<div class="pot-odds-help-content">
+    <p><strong>Pot odds</strong> tell you how often you need to win for a call to break even.</p>
+    <p><strong>Formula:</strong><br>
+    Equity Needed = Bet ÷ (Pot + Bet + Your Call)</p>
+    <p><strong>Simplified (same math):</strong><br>
+    Equity Needed = Bet ÷ (Pot + Bet×2)</p>
+    <div class="pot-odds-help-example">
+        <strong>Example:</strong><br>
+        Pot: $100 | Bet: $50<br>
+        Equity = 50 ÷ (100 + 50 + 50)<br>
+        Equity = 50 ÷ 200 = <strong>25%</strong><br>
+        You need at least 25% equity to call.
+    </div>
+</div>
+`;
+
+// ─── Normal Mode Generators ───────────────────────────────────────────────────
+
 function randomPot(): number {
-    // Weighted toward common sizes — use a mix of ranges
     const r = Math.random();
     let base: number;
     if (r < 0.4) {
-        // Small pots $20-$200
         base = 20 + Math.random() * 180;
     } else if (r < 0.75) {
-        // Medium pots $200-$1000
         base = 200 + Math.random() * 800;
     } else {
-        // Large pots $1000-$5000
         base = 1000 + Math.random() * 4000;
     }
     return Math.round(base);
 }
 
-/**
- * Generate a random bet fraction between 25% and 200% of pot
- */
 function randomBetFraction(): number {
-    // Common bet sizes with some noise
     const commonFractions = [0.25, 0.33, 0.5, 0.66, 0.75, 1.0, 1.5, 2.0];
     const r = Math.random();
     if (r < 0.3) {
-        // Pick a common fraction with slight noise
         const base = commonFractions[Math.floor(Math.random() * commonFractions.length)];
         return base + (Math.random() * 0.1 - 0.05);
     }
-    // Otherwise random between 0.25 and 2.0
     return 0.25 + Math.random() * 1.75;
 }
 
-/**
- * Generate a single pot odds problem
- */
-function generatePotOddsProblem(): PotOddsProblem {
+// ─── Problem Generation ───────────────────────────────────────────────────────
+
+function generatePotOddsProblem(difficulty: PotOddsDifficulty): PotOddsProblem {
+    if (difficulty === 'easy') {
+        const combo = EASY_COMBOS[Math.floor(Math.random() * EASY_COMBOS.length)];
+        const options = generateEasyOptions(combo.equity);
+        return {
+            pot: combo.pot,
+            bet: combo.bet,
+            correctEquity: combo.equity,
+            options,
+        };
+    }
+
+    // Normal mode
     const pot = randomPot();
     const betFraction = randomBetFraction();
     const bet = Math.round(pot * betFraction);
-
-    // Correct equity: call / (pot + bet + call), where call = bet
     const correctEquity = Math.round((bet / (pot + bet + bet)) * 100);
-
     const options = generateOptions(correctEquity, pot, bet);
-
     return { pot, bet, correctEquity, options };
 }
 
-/**
- * Generate 4 options including the correct answer and 3 smart distractors
- */
+function generateEasyOptions(correct: number): number[] {
+    // Always include the correct answer plus smart distractors
+    const distractors = new Set<number>();
+    distractors.add(correct);
+
+    // Common mistakes for each equity tier
+    const mistakeMap: Record<number, number[]> = {
+        25: [33, 20, 40],   // forgetting to include call
+        33: [50, 25, 43],   // thinking it's half
+        40: [50, 33, 25],   // bet/pot instead of bet/(pot+2*bet)
+        43: [33, 50, 25],   // rounding error
+    };
+    const mistakes = mistakeMap[correct] || [correct - 5, correct + 5, correct + 10];
+    for (const m of mistakes) {
+        if (distractors.size < 4 && m >= 10 && m <= 60) distractors.add(m);
+    }
+    while (distractors.size < 4) {
+        const r = 10 + Math.floor(Math.random() * 51);
+        if (r !== correct) distractors.add(r);
+    }
+
+    const arr = Array.from(distractors);
+    // Fisher-Yates shuffle
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 function generateOptions(correct: number, pot: number, bet: number): number[] {
     const options = new Set<number>();
     options.add(correct);
@@ -101,7 +166,6 @@ function generateOptions(correct: number, pot: number, bet: number): number[] {
         attempts++;
     }
 
-    // Shuffle
     const arr = Array.from(options);
     for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -111,27 +175,84 @@ function generateOptions(correct: number, pot: number, bet: number): number[] {
     return arr;
 }
 
-/**
- * Generate a batch of problems
- */
-function generateBatch(size: number): PotOddsProblem[] {
+function generateBatch(size: number, difficulty: PotOddsDifficulty): PotOddsProblem[] {
     const problems: PotOddsProblem[] = [];
     for (let i = 0; i < size; i++) {
-        problems.push(generatePotOddsProblem());
+        problems.push(generatePotOddsProblem(difficulty));
     }
     return problems;
 }
 
-/**
- * Format a dollar amount with commas
- */
+// ─── Formatting ───────────────────────────────────────────────────────────────
+
 function formatDollars(amount: number): string {
     return '$' + amount.toLocaleString();
 }
 
-/**
- * Display the current problem
- */
+// ─── Difficulty & Help Toggle ───────────────────────────────────────────────
+
+export function setDifficulty(difficulty: PotOddsDifficulty): void {
+    if (!potOddsDrillState) return;
+    potOddsDrillState.difficulty = difficulty;
+    updateDifficultyToggle();
+    updateHelpVisibility();
+    // Restart the drill with the new difficulty
+    restartWithNewDifficulty(difficulty);
+}
+
+function restartWithNewDifficulty(difficulty: PotOddsDifficulty): void {
+    const problems = generateBatch(BATCH_SIZE, difficulty);
+    setPotOddsDrillState({
+        ...potOddsDrillState,
+        problems,
+        currentIndex: 0,
+        correctAnswers: 0,
+        totalAttempts: 0,
+        results: [],
+        questionStartTime: Date.now(),
+        difficulty,
+    });
+
+    // Hide results if showing
+    const resultDiv = document.getElementById('pot-odds-result');
+    if (resultDiv) resultDiv.style.display = 'none';
+
+    const drillMode = document.querySelector('.pot-odds-mode') as HTMLElement;
+    if (drillMode) drillMode.style.display = 'block';
+
+    displayCurrentProblem();
+}
+
+function updateDifficultyToggle(): void {
+    if (!potOddsDrillState) return;
+    const easyBtn = document.getElementById('pot-odds-easy-btn');
+    const normalBtn = document.getElementById('pot-odds-normal-btn');
+    if (easyBtn && normalBtn) {
+        easyBtn.classList.toggle('active', potOddsDrillState.difficulty === 'easy');
+        normalBtn.classList.toggle('active', potOddsDrillState.difficulty === 'normal');
+    }
+}
+
+function updateHelpVisibility(): void {
+    if (!potOddsDrillState) return;
+    const helpPanel = document.getElementById('pot-odds-help');
+    if (helpPanel) {
+        // Show in easy mode, hide in normal mode
+        const isEasy = potOddsDrillState.difficulty === 'easy';
+        helpPanel.style.display = isEasy ? 'block' : 'none';
+    }
+}
+
+export function toggleHelp(): void {
+    const helpPanel = document.getElementById('pot-odds-help');
+    if (helpPanel) {
+        const isHidden = helpPanel.style.display === 'none';
+        helpPanel.style.display = isHidden ? 'block' : 'none';
+    }
+}
+
+// ─── Display ─────────────────────────────────────────────────────────────────
+
 function displayCurrentProblem(): void {
     if (!potOddsDrillState) return;
 
@@ -162,15 +283,15 @@ function displayCurrentProblem(): void {
         progressText.textContent = `${potOddsDrillState.currentIndex} / ${potOddsDrillState.batchSize}`;
     }
 
-    // Record question start time
     potOddsDrillState.questionStartTime = Date.now();
 }
 
-/**
- * Start a new pot odds drill session
- */
+// ─── Drill Session ───────────────────────────────────────────────────────────
+
 export function startPotOddsDrill(): void {
-    const problems = generateBatch(BATCH_SIZE);
+    // Default to normal difficulty
+    const difficulty: PotOddsDifficulty = 'normal';
+    const problems = generateBatch(BATCH_SIZE, difficulty);
 
     setPotOddsDrillState({
         problems,
@@ -180,7 +301,12 @@ export function startPotOddsDrill(): void {
         results: [],
         questionStartTime: Date.now(),
         batchSize: BATCH_SIZE,
+        difficulty,
     });
+
+    // Build the help panel HTML (injected once)
+    injectHelpPanel();
+    injectDifficultyToggle();
 
     // Hide results, show drill
     const resultDiv = document.getElementById('pot-odds-result');
@@ -189,12 +315,79 @@ export function startPotOddsDrill(): void {
     const drillMode = document.querySelector('.pot-odds-mode') as HTMLElement;
     if (drillMode) drillMode.style.display = 'block';
 
+    updateDifficultyToggle();
+    updateHelpVisibility();
     displayCurrentProblem();
 }
 
-/**
- * Handle the user selecting an answer
- */
+function injectDifficultyToggle(): void {
+    // Only inject once
+    if (document.getElementById('pot-odds-difficulty')) return;
+
+    const drillMode = document.querySelector('.pot-odds-mode');
+    if (!drillMode) return;
+
+    const container = document.createElement('div');
+    container.id = 'pot-odds-difficulty';
+    container.className = 'pot-odds-difficulty';
+    container.innerHTML = `
+        <button id="pot-odds-easy-btn" class="difficulty-btn">Easy</button>
+        <button id="pot-odds-normal-btn" class="difficulty-btn active">Normal</button>
+    `;
+
+    // Insert at the top of .pot-odds-display
+    const display = drillMode.querySelector('.pot-odds-display');
+    if (display) {
+        display.insertBefore(container, display.firstChild);
+    }
+
+    // Wire up toggle buttons
+    document.getElementById('pot-odds-easy-btn')?.addEventListener('click', () => setDifficulty('easy'));
+    document.getElementById('pot-odds-normal-btn')?.addEventListener('click', () => setDifficulty('normal'));
+}
+
+function injectHelpPanel(): void {
+    // Only inject once
+    if (document.getElementById('pot-odds-help')) return;
+
+    const drillMode = document.querySelector('.pot-odds-mode');
+    if (!drillMode) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'pot-odds-help';
+    panel.className = 'pot-odds-help';
+    panel.innerHTML = `
+        <div class="pot-odds-help-header">
+            <span class="pot-odds-help-title">How to Calculate Pot Odds</span>
+            <button id="pot-odds-help-toggle" class="pot-odds-help-toggle" aria-label="Toggle help">−</button>
+        </div>
+        ${HELP_HTML}
+    `;
+
+    // Insert after the difficulty toggle inside .pot-odds-display
+    const display = drillMode.querySelector('.pot-odds-display');
+    if (display) {
+        display.insertBefore(panel, display.children[1]); // after difficulty toggle
+    }
+
+    // Wire up collapse button
+    document.getElementById('pot-odds-help-toggle')?.addEventListener('click', () => {
+        const content = panel.querySelector('.pot-odds-help-content');
+        const toggle = document.getElementById('pot-odds-help-toggle');
+        if (content) {
+            const isHidden = content.style.display === 'none';
+            content.style.display = isHidden ? 'block' : 'none';
+            if (toggle) toggle.textContent = isHidden ? '−' : '+';
+        }
+    });
+
+    // Start with content visible (easy mode default)
+    const content = panel.querySelector('.pot-odds-help-content');
+    if (content) content.style.display = 'block';
+}
+
+// ─── Answer Handling ─────────────────────────────────────────────────────────
+
 export function handlePotOddsAnswer(userAnswer: number): void {
     if (!potOddsDrillState) return;
 
@@ -216,7 +409,7 @@ export function handlePotOddsAnswer(userAnswer: number): void {
         potOddsDrillState.correctAnswers++;
     }
 
-    // Visual feedback on the buttons
+    // Visual feedback
     const optionsContainer = document.getElementById('pot-odds-options');
     if (optionsContainer) {
         const buttons = optionsContainer.querySelectorAll('.pot-odds-btn');
@@ -239,7 +432,6 @@ export function handlePotOddsAnswer(userAnswer: number): void {
         showToast(`✗ Wrong! Correct: ${problem.correctEquity}%`, 'error');
     }
 
-    // Advance after delay
     potOddsDrillState.currentIndex++;
 
     setTimeout(() => {
@@ -252,9 +444,8 @@ export function handlePotOddsAnswer(userAnswer: number): void {
     }, 1000);
 }
 
-/**
- * Show results after a batch
- */
+// ─── Results ──────────────────────────────────────────────────────────────────
+
 export function showPotOddsResults(): void {
     if (!potOddsDrillState) return;
 
@@ -269,7 +460,6 @@ export function showPotOddsResults(): void {
         ? (potOddsDrillState.results.reduce((sum, r) => sum + r.responseTimeMs, 0) / potOddsDrillState.results.length / 1000).toFixed(1)
         : '0.0';
 
-    // Build results breakdown
     let breakdownHtml = '<div class="pot-odds-breakdown">';
     potOddsDrillState.results.forEach((r, i) => {
         const icon = r.correct ? '✓' : '✗';
@@ -297,19 +487,16 @@ export function showPotOddsResults(): void {
     `;
     resultDiv.style.display = 'block';
 
-    // Hide the drill display
     const drillMode = document.querySelector('.pot-odds-mode') as HTMLElement;
     if (drillMode) drillMode.style.display = 'none';
 
-    // Wire up buttons
     const continueBtn = document.getElementById('pot-odds-continue-btn');
     const restartBtn = document.getElementById('pot-odds-restart-btn');
 
     if (continueBtn) {
         continueBtn.addEventListener('click', () => {
             if (!potOddsDrillState) return;
-            // Keep cumulative stats, generate new batch
-            const newProblems = generateBatch(BATCH_SIZE);
+            const newProblems = generateBatch(BATCH_SIZE, potOddsDrillState.difficulty);
             potOddsDrillState.problems = newProblems;
             potOddsDrillState.currentIndex = 0;
             potOddsDrillState.results = [];

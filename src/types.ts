@@ -40,6 +40,8 @@ export interface PotOddsProblem {
     options: number[];       // four percentage choices
 }
 
+export type PotOddsDifficulty = 'easy' | 'normal';
+
 export interface PotOddsDrillState {
     problems: PotOddsProblem[];
     currentIndex: number;
@@ -53,6 +55,7 @@ export interface PotOddsDrillState {
     }>;
     questionStartTime: number;
     batchSize: number;
+    difficulty: PotOddsDifficulty;
 }
 
 // Spot Drill state
