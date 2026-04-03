@@ -20,16 +20,38 @@ jobs:
       - name: Check labels and merge
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          PR_LABELS=$(gh pr view $PR_NUMBER --json labels --jq '.labels[].name')
-          
-          if echo "$PR_LABELS" | grep -q "trust:p2"; then
-            echo "p2 PR — attempting auto-merge"
-            gh pr merge $PR_NUMBER --admin --merge
-          elif echo "$PR_LABELS" | grep -q "trust:p3"; then
-            echo "p3 PR — attempting auto-merge"
-            gh pr merge $PR_NUMBER --admin --merge
-          else
-            echo "Not a p2/p3 PR — skipping auto-merge"
+
+          # No PR number (e.g. push without PR context) — nothing to do
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "No PR number from event — skipping"
+            exit 0
           fi
+
+          PR_LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+
+          # Skip if not a trust:p2/p3 PR
+          if ! echo "$PR_LABELS" | grep -qE "trust:p2|trust:p3"; then
+            echo "Not a p2/p3 PR — skipping auto-merge"
+            exit 0
+          fi
+
+          # Check CI status — only merge when all checks are green
+          CHECK_CONCLUSIONS=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[].conclusion // empty')
+          CHECK_STATUSES=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[].status // empty')
+
+          # Failures block the merge
+          if echo "$CHECK_CONCLUSIONS" | grep -qE "^(FAILURE|TIMED_OUT|CANCELLED|ACTION_REQUIRED)$"; then
+            echo "CI checks failed — skipping auto-merge"
+            exit 0
+          fi
+
+          # Still running — skip (the check_suite:completed trigger will re-run when checks finish)
+          if echo "$CHECK_STATUSES" | grep -qE "^(PENDING|QUEUED|IN_PROGRESS)$"; then
+            echo "CI checks still running — will retry when checks complete"
+            exit 0
+          fi
+
+          echo "All CI checks passed — attempting auto-merge"
+          gh pr merge "$PR_NUMBER" --admin --merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
