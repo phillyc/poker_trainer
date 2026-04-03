@@ -19,14 +19,15 @@ jobs:
 
       - name: Check labels and merge
         run: |
-          PR_LABELS=$(gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name')
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_LABELS=$(gh pr view $PR_NUMBER --json labels --jq '.labels[].name')
           
           if echo "$PR_LABELS" | grep -q "trust:p2"; then
             echo "p2 PR — attempting auto-merge"
-            gh pr merge --admin --merge
+            gh pr merge $PR_NUMBER --admin --merge
           elif echo "$PR_LABELS" | grep -q "trust:p3"; then
             echo "p3 PR — attempting auto-merge"
-            gh pr merge --admin --merge
+            gh pr merge $PR_NUMBER --admin --merge
           else
             echo "Not a p2/p3 PR — skipping auto-merge"
           fi
