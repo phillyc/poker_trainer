@@ -1,0 +1,98 @@
+name: Preview Approval Gate
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  statuses: write
+
+jobs:
+  gate:
+    if: |
+      github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/approve') ||
+       startsWith(github.event.comment.body, '/disapprove'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process approval/disapproval command
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.issue.number;
+            const commentBody = context.payload.comment.body.trim();
+            const commentUser = context.payload.comment.user.login;
+
+            // Get PR details — head SHA, author, etc.
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: prNumber,
+            });
+            const headSha = pr.head.sha;
+
+            // ----- Authorization check -----
+            // PR author can approve their own PRs
+            const isAuthor = commentUser === pr.user.login;
+            let isAuthorized = isAuthor;
+
+            if (!isAuthor) {
+              // Check if commenter is a collaborator (write access or higher)
+              try {
+                const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  ...context.repo,
+                  username: commentUser,
+                });
+                isAuthorized = ['admin', 'write', 'maintain'].includes(perm.permission);
+              } catch (e) {
+                // Not a collaborator — leave isAuthorized false
+              }
+            }
+
+            if (!isAuthorized) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: prNumber,
+                body: `⚠️ @${commentUser} is not authorized to approve or disapprove this preview. Only the PR author and collaborators with write access can use \`/approve\` or \`/disapprove\`.`,
+              });
+              console.log(`Unauthorized attempt by @${commentUser}`);
+              return;
+            }
+
+            // ----- Determine action -----
+            const bodyLower = commentBody.toLowerCase();
+            const previewUrl = `https://philc.io/poker_trainer/preview/pr-${prNumber}/`;
+
+            let state, description, actionWord, emoji;
+            if (bodyLower.startsWith('/approve')) {
+              state = 'success';
+              description = 'Preview approved — merge is unblocked';
+              actionWord = 'approved';
+              emoji = '✅';
+            } else if (bodyLower.startsWith('/disapprove')) {
+              state = 'failure';
+              description = 'Preview disapproved — changes requested';
+              actionWord = 'disapproved';
+              emoji = '❌';
+            } else {
+              console.log(`Unrecognized command (shouldn't reach here): ${bodyLower}`);
+              return;
+            }
+
+            // ----- Set commit status -----
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: headSha,
+              state,
+              target_url: previewUrl,
+              description,
+              context: 'Preview Approval / gate',
+            });
+            console.log(`Gate status set to ${state} for ${headSha}`);
+
+            // ----- Post confirmation comment -----
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: prNumber,
+              body: `${emoji} **Preview ${actionWord}** by @${commentUser}.\n\n${previewUrl}`,
+            });

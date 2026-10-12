@@ -5,10 +5,11 @@ on:
     types: [labeled]
   check_suite:
     types: [completed, requested]
+  status:
 
-# Only run one auto-merge at a time per PR
+# Only run one auto-merge at a time per PR (handle both event types)
 concurrency:
-  group: auto-merge-${{ github.event.pull_request.number }}
+  group: auto-merge-v1-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
 permissions:
@@ -18,8 +19,10 @@ permissions:
 
 jobs:
   auto-merge:
-    # Only act when the 'automerge' label is present
-    if: contains(github.event.pull_request.labels.*.name, 'automerge')
+    # Allow status events through (PR context resolved inside the steps)
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'automerge') ||
+      github.event_name == 'status'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,23 +30,66 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve PR context
+        id: ctx
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          # For 'status' events (no PR in event payload), resolve from branch
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            BRANCH_JSON='${{ toJSON(github.event.branches) }}'
+            BRANCH_NAME=$(echo "$BRANCH_JSON" | python3 -c "import sys,json; b=json.load(sys.stdin); print(b[0].get('name','') if b else '')" 2>/dev/null || echo "")
+            if [ -n "$BRANCH_NAME" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "gh-pages" ]; then
+              PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number // empty' --state open 2>/dev/null || echo "")
+            fi
+            if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+              echo "pr_number=" >> $GITHUB_OUTPUT
+              echo "❌ No PR context — skipping"
+              exit 1
+            fi
+            echo "Resolved PR #$PR_NUMBER from commit status event"
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid // empty' 2>/dev/null || echo "")
+          echo "head_sha=$HEAD_SHA" >> $GITHUB_OUTPUT
+
       - name: Check merge eligibility
         id: eligibility
         run: |
-          echo "PR: #${{ github.event.pull_request.number }}"
-          echo "Title: ${{ github.event.pull_request.title }}"
-          echo "Author: ${{ github.event.pull_request.user.login }}"
-          echo "Base: ${{ github.event.pull_request.base.ref }}"
-          echo "Head: ${{ github.event.pull_request.head.ref }}"
+          PR_NUMBER=${{ steps.ctx.outputs.pr_number }}
+          HEAD_SHA=${{ steps.ctx.outputs.head_sha }}
+
+          echo "PR: #$PR_NUMBER"
+
+          # Get PR info via gh
+          PR_INFO=$(gh pr view "$PR_NUMBER" --json title,author,baseRefName,headRefName,labels,state,draft,isDraft)
+          echo "Title: $(echo "$PR_INFO" | jq -r '.title // "unknown"')"
+          echo "Author: $(echo "$PR_INFO" | jq -r '.author.login // "unknown"')"
+          echo "Base: $(echo "$PR_INFO" | jq -r '.baseRefName // "unknown"')"
+          echo "Head: $(echo "$PR_INFO" | jq -r '.headRefName // "unknown"')"
+
+          # Check PR is still open
+          if [ "$(echo "$PR_INFO" | jq -r '.state')" != "OPEN" ]; then
+            echo "❌ PR is not open — skipping"
+            exit 1
+          fi
+
+          # Check for 'automerge' label
+          if ! echo "$PR_INFO" | jq -e '.labels[] | select(.name == "automerge")' > /dev/null 2>&1; then
+            echo "❌ No 'automerge' label — skipping"
+            exit 1
+          fi
 
           # Only merge to main
-          if [[ "${{ github.event.pull_request.base.ref }}" != "main" ]]; then
+          if [ "$(echo "$PR_INFO" | jq -r '.baseRefName')" != "main" ]; then
             echo "❌ Not targeting main — skipping"
             exit 1
           fi
 
           # Check PR is not draft
-          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+          IS_DRAFT=$(echo "$PR_INFO" | jq -r '.isDraft // .draft // false')
+          if [ "$IS_DRAFT" = "true" ]; then
             echo "❌ Draft PR — skipping"
             exit 1
           fi
@@ -53,7 +99,12 @@ jobs:
       - name: Wait for CI
         id: wait-ci
         run: |
+          PR_NUMBER=${{ steps.ctx.outputs.pr_number }}
+          HEAD_SHA=${{ steps.ctx.outputs.head_sha }}
+
           echo "Waiting for all status checks to complete..."
+          echo "SHA: $HEAD_SHA"
+
           # Poll up to 30 times, 20 seconds each = 10 minutes max
           MAX_ATTEMPTS=30
           ATTEMPT=0
@@ -61,27 +112,32 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
             echo "Check $ATTEMPT/$MAX_ATTEMPTS..."
 
-            # Get all status checks for this PR
-            STATUSES=$(curl -s -L \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/statuses")
-
-            # Get the latest combined status
+            # Get the latest combined status (includes commit statuses + check runs)
             COMBINED=$(curl -s -L \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}")
+              "https://api.github.com/repos/${{ github.repository }}/commits/${HEAD_SHA}")
 
             STATE=$(echo "$COMBINED" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state','unknown'))")
-
             echo "Combined state: $STATE"
+
+            # Also show the preview approval gate status
+            GATE_INFO=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[] | select(.context == "Preview Approval / gate") | {context, state: (.state // .conclusion // "unknown")}' 2>/dev/null || echo "{}")
+            GATE_STATE=$(echo "$GATE_INFO" | jq -r '.state // "nonexistent"' 2>/dev/null || echo "nonexistent")
+            echo "Preview Approval gate: $GATE_STATE"
 
             if [[ "$STATE" == "success" ]]; then
               echo "✅ All checks passed!"
               exit 0
             elif [[ "$STATE" == "failure" ]]; then
               echo "❌ Some checks failed — auto-merge aborted"
+              # Identify which checks failed
+              FAILED_CHECKS=$(curl -s -L \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/${{ github.repository }}/commits/${HEAD_SHA}/statuses" | \
+                python3 -c "import sys,json; data=json.load(sys.stdin); print([s['context'] for s in data if s['state']=='failure'])" 2>/dev/null)
+              echo "Failed checks: $FAILED_CHECKS"
               exit 2
             fi
 
@@ -95,8 +151,9 @@ jobs:
       - name: Auto Merge
         if: steps.wait-ci.outcome == 'success'
         run: |
+          PR_NUMBER=${{ steps.ctx.outputs.pr_number }}
           echo "Attempting auto-merge..."
-          gh pr merge ${{ github.event.pull_request.number }} \
+          gh pr merge $PR_NUMBER \
             --squash \
             --delete-branch \
             --comment "✅ Auto-merged by GitHub Actions (automerge label)"
@@ -107,9 +164,9 @@ jobs:
       - name: Notify failure
         if: steps.wait-ci.outcome == 'failure'
         run: |
+          PR_NUMBER=${{ steps.ctx.outputs.pr_number }}
           echo "❌ Auto-merge aborted — checks did not pass"
-          # Optionally post a comment
-          gh pr comment ${{ github.event.pull_request.number }} \
+          gh pr comment $PR_NUMBER \
             --body "⚠️ Auto-merge label applied but CI failed. Manual review required."
           exit 1
         env:
