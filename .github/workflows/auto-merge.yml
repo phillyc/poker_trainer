@@ -46,18 +46,28 @@ jobs:
           fi
 
           # Check CI status — only merge when all checks are green
-          CHECK_CONCLUSIONS=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[].conclusion // empty')
-          CHECK_STATUSES=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[].status // empty')
-
-          # Failures block the merge
-          if echo "$CHECK_CONCLUSIONS" | grep -qE "^(FAILURE|TIMED_OUT|CANCELLED|ACTION_REQUIRED)$"; then
-            echo "CI checks failed — skipping auto-merge"
-            exit 0
-          fi
+          # NOTE: statusCheckRollup includes this workflow's own CheckRun (IN_PROGRESS),
+          # so we filter it out to avoid false "still running" detection.
+          CHECK_STATUSES=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '
+            .statusCheckRollup[]
+            | select(.name != "auto-merge" and .name != "auto-merge / auto-merge")
+            | .status // empty
+          ')
+          CHECK_CONCLUSIONS=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '
+            .statusCheckRollup[]
+            | select(.name != "auto-merge" and .name != "auto-merge / auto-merge")
+            | .conclusion // empty
+          ')
 
           # Still running — skip (the check_suite:completed trigger will re-run when checks finish)
           if echo "$CHECK_STATUSES" | grep -qE "^(PENDING|QUEUED|IN_PROGRESS)$"; then
             echo "CI checks still running — will retry when checks complete"
+            exit 0
+          fi
+
+          # Failures block the merge
+          if echo "$CHECK_CONCLUSIONS" | grep -qE "^(FAILURE|TIMED_OUT|CANCELLED|ACTION_REQUIRED)$"; then
+            echo "CI checks failed — skipping auto-merge"
             exit 0
           fi
 
