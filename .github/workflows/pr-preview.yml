@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 
 concurrency:
   group: pr-preview-${{ github.event.pull_request.number }}
@@ -81,7 +82,9 @@ jobs:
             const previewUrl = `${pagesUrl}/preview/pr-${prNumber}/`;
             const body = `🚀 **Preview deployed!**\n\n` +
               `Preview URL: ${previewUrl}\n\n` +
-              `_This preview will be updated on each push and removed when the PR is closed._`;
+              `_This preview will be updated on each push and removed when the PR is closed._\n\n` +
+              `---\n` +
+              `**Need to approve these changes?** Comment \`/approve\` on this PR to unblock the merge, or \`/disapprove\` to request changes.`;
             
             // Check for existing bot comment to update instead of spamming
             const { data: comments } = await github.rest.issues.listComments({
@@ -106,3 +109,22 @@ jobs:
                 body,
               });
             }
+
+      - name: Set approval gate status to pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha;
+            const previewUrl = `https://philc.io/poker_trainer/preview/pr-${prNumber}/`;
+            
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha,
+              state: 'pending',
+              target_url: previewUrl,
+              description: 'Waiting for preview approval — comment /approve or /disapprove',
+              context: 'Preview Approval / gate',
+            });
+            
+            console.log(`Set gate status to pending for ${sha}`);

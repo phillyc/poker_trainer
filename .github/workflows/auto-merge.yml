@@ -5,6 +5,7 @@ on:
     types: [completed]
   pull_request:
     types: [opened, synchronize, labeled]
+  status:
 
 permissions:
   contents: write
@@ -19,12 +20,21 @@ jobs:
 
       - name: Check labels and merge
         run: |
+          # --- Resolve PR number ---
           PR_NUMBER=${{ github.event.pull_request.number }}
 
-          # No PR number (e.g. push without PR context) — nothing to do
+          # For 'status' events (commit status updates), resolve PR from branch
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No PR number from event — skipping"
-            exit 0
+            BRANCH_JSON='${{ toJSON(github.event.branches) }}'
+            BRANCH_NAME=$(echo "$BRANCH_JSON" | python3 -c "import sys,json; b=json.load(sys.stdin); print(b[0].get('name','') if b else '')" 2>/dev/null || echo "")
+            if [ -n "$BRANCH_NAME" ] && [ "$BRANCH_NAME" != "main" ]; then
+              PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number // empty' --state open 2>/dev/null || echo "")
+            fi
+            if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+              echo "No PR context — skipping"
+              exit 0
+            fi
+            echo "Resolved PR #$PR_NUMBER from commit status event"
           fi
 
           PR_LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
