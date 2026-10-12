@@ -194,6 +194,68 @@ poker_trainer/
 └── DOCKER_SETUP.md         # Docker setup guide for AI assistants
 ```
 
+## PR Preview & Approval Workflow
+
+Pull Requests automatically get a live preview deployed and must pass an approval gate before merging.
+
+### How Previews Work
+
+1. **Open a PR** → The `PR Preview Deploy` workflow triggers on `opened`, `synchronize`, and `reopened` events.
+2. **Build & Deploy** → The workflow installs dependencies, builds the app, and pushes the output to the `gh-pages` branch under `preview/pr-{N}/`.
+3. **Preview URL** → A bot comment on the PR provides the live link:
+   `https://philc.io/poker_trainer/preview/pr-{N}/`
+4. **Incremental updates** → Each push to the PR updates the same preview directory. The bot edits its existing comment rather than posting a new one.
+5. **Cleanup** → When the PR closes, `PR Preview Cleanup` removes the preview directory from `gh-pages`.
+
+### Approval Gate
+
+Every PR starts with a **pending** commit status context called `Preview Approval / gate`. This status must be set to success before auto-merge will proceed.
+
+- **`/approve`** → Sets the gate status to `success` (green), unblocking the merge.
+- **`/disapprove`** → Sets the gate status to `failure` (red), blocking the merge.
+
+**To approve a PR:** Comment `/approve` on the PR (as the PR author or a collaborator with write access). The gate bot will:
+- Set the commit status to success
+- Post a confirmation comment with the preview link
+
+**To disapprove:** Comment `/disapprove`. The gate sets status to failure and posts a confirmation.
+
+**Authorization:** Only the PR author and repository collaborators with write access or higher can trigger `/approve` or `/disapprove`. Unauthorized attempts are rejected with a comment explaining why.
+
+### Auto-Merge Behavior
+
+PRs are auto-merged based on their trust label:
+
+| Label | Behavior |
+|-------|----------|
+| `trust:p0` | Approved on sight — no review needed (reserved for trivial/revert PRs). |
+| `trust:p1` | **Default.** A human reviews and merges. *(No auto-merge.)* |
+| `trust:p2` | Auto-merged when all CI checks pass AND the approval gate is green. |
+| `trust:p3` | Same as p2 — auto-merged when all gates pass. |
+
+Auto-merge re-evaluates whenever:
+- A commit status changes (via the `status` webhook event)
+- A check suite completes
+- The PR is opened, synchronized, or labeled
+
+For the approval gate to **block merge via the GitHub UI** (not just auto-merge), branch protection must be configured to require the `Preview Approval / gate` status check on the `main` branch.
+
+### Preview Cleanup
+
+When a PR is closed (merged or not), the `PR Preview Cleanup` workflow:
+- Deletes the `preview/pr-{N}/` directory from `gh-pages`
+- Updates the bot's preview comment to say the preview was removed
+
+### Workflow Files
+
+- `.github/workflows/pr-preview.yml` — Builds and deploys PR previews + sets pending approval gate
+- `.github/workflows/preview-approval-gate.yml` — Handles `/approve` and `/disapprove` comments
+- `.github/workflows/pr-preview-cleanup.yml` — Removes previews when PRs close
+- `.github/workflows/auto-merge.yml` — Auto-merges p2/p3 PRs when gates pass
+- `.github/workflows/auto-approve.yml` — Legacy auto-merge (triggered by `automerge` label)
+- `.github/workflows/deploy.yml` — Production deploy to GitHub Pages on push to main
+- `.github/workflows/ci.yml` — Build verification on all PRs
+
 ## For AI Assistants 🤖
 
 See `DOCKER_SETUP.md` for complete Docker development environment setup and usage instructions.
