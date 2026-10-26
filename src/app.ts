@@ -3,7 +3,7 @@ import {
     isDragging, currentMode,
     setIsDragging, setDragAction
 } from './state';
-import { setEditMode, resetAll, selectAll, getCurrentSelection, updateStats } from './actions';
+import { setEditMode, resetAll, resetAppToInitialState, selectAll, getCurrentSelection, updateStats } from './actions';
 import { createRangeGrid, handleTouchEnd } from './grid';
 import { loadPresetsFromFile, loadPreset } from './presets';
 import { saveCurrentRange, renderSavedRanges } from './storage';
@@ -43,6 +43,21 @@ function setupNavigation(): void {
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', resetAll);
+    }
+    
+    // Nav-brand reset: clicking Poker Trainer header resets app to initial state
+    const navBrand = document.querySelector('.nav-brand');
+    if (navBrand) {
+        navBrand.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the mobile toggle or other overlapping elements
+            resetAppToInitialState();
+        });
+        navBrand.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                resetAppToInitialState();
+            }
+        });
     }
     
     // Select all button
@@ -173,3 +188,6 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
+// Expose reset function for console/testing use
+(window as any).resetAppToInitialState = resetAppToInitialState;
