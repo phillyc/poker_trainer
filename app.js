@@ -102,6 +102,120 @@
     potOddsDrillState = value;
   }
 
+  // src/ui.ts
+  function showToast(message, type) {
+    const container = document.getElementById("toast-container");
+    if (!container)
+      return;
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add("show");
+    }, 10);
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => {
+        container.removeChild(toast);
+      }, 300);
+    }, 2e3);
+  }
+  function showConfirm(message) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "confirm-modal-overlay";
+      const modal = document.createElement("div");
+      modal.className = "confirm-modal";
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "confirm-message";
+      messageDiv.textContent = message;
+      const buttonsDiv = document.createElement("div");
+      buttonsDiv.className = "confirm-buttons";
+      const confirmBtn = document.createElement("button");
+      confirmBtn.className = "confirm-btn confirm-btn-ok";
+      confirmBtn.textContent = "OK";
+      confirmBtn.addEventListener("click", () => {
+        document.body.removeChild(overlay);
+        resolve(true);
+      });
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "confirm-btn confirm-btn-cancel";
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.addEventListener("click", () => {
+        document.body.removeChild(overlay);
+        resolve(false);
+      });
+      buttonsDiv.appendChild(confirmBtn);
+      buttonsDiv.appendChild(cancelBtn);
+      modal.appendChild(messageDiv);
+      modal.appendChild(buttonsDiv);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      setTimeout(() => {
+        overlay.classList.add("show");
+      }, 10);
+      const handleEscape = (e) => {
+        if (e.key === "Escape") {
+          document.body.removeChild(overlay);
+          document.removeEventListener("keydown", handleEscape);
+          resolve(false);
+        }
+      };
+      document.addEventListener("keydown", handleEscape);
+    });
+  }
+  function setupMobileNavigation() {
+    const mobileNavToggle = document.getElementById("mobile-nav-toggle");
+    const navBar = document.getElementById("nav-bar");
+    const navBackdrop = document.getElementById("nav-backdrop");
+    const hamburgerIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".hamburger-icon");
+    const closeIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".close-icon");
+    if (!mobileNavToggle || !navBar || !navBackdrop)
+      return;
+    function openNav() {
+      navBar.classList.add("mobile-open");
+      navBackdrop.classList.add("show");
+      if (hamburgerIcon)
+        hamburgerIcon.style.display = "none";
+      if (closeIcon)
+        closeIcon.style.display = "block";
+      document.body.style.overflow = "hidden";
+    }
+    function closeNav() {
+      navBar.classList.remove("mobile-open");
+      navBackdrop.classList.remove("show");
+      if (hamburgerIcon)
+        hamburgerIcon.style.display = "block";
+      if (closeIcon)
+        closeIcon.style.display = "none";
+      document.body.style.overflow = "";
+    }
+    mobileNavToggle.addEventListener("click", () => {
+      if (navBar.classList.contains("mobile-open")) {
+        closeNav();
+      } else {
+        openNav();
+      }
+    });
+    navBackdrop.addEventListener("click", () => {
+      closeNav();
+    });
+    const navButtons = navBar.querySelectorAll(".nav-button, .preset-button, .mode-toggle-btn");
+    navButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setTimeout(() => {
+          closeNav();
+        }, 300);
+      });
+    });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) {
+        closeNav();
+      }
+    });
+  }
+
   // src/actions.ts
   function setHandAction(hand, action) {
     const handState = handsState.get(hand);
@@ -172,6 +286,92 @@
       }
     });
     return selected;
+  }
+  function resetAppToInitialState() {
+    setCurrentMode("edit");
+    setCurrentTrainingMode("range-recall");
+    setCurrentNavTab("editor");
+    setCurrentEditMode("raise");
+    setTrainingRange(null);
+    setTrainingRangeName("");
+    setTrainingRangeDescription("");
+    setCurrentLoadedPresetKey("");
+    setSpotDrillState(null);
+    setPotOddsDrillState(null);
+    setIsDragging(false);
+    setDragAction(null);
+    setIsTouching(false);
+    setLastTouchedHand(null);
+    resetAll();
+    const editorView = document.getElementById("editor-view");
+    const grid = document.getElementById("range-grid");
+    const stats = editorView == null ? void 0 : editorView.querySelector(".stats");
+    if (editorView && grid) {
+      const gridParent = grid.parentElement;
+      if (gridParent !== editorView) {
+        if (stats) {
+          editorView.insertBefore(grid, stats);
+        } else {
+          editorView.appendChild(grid);
+        }
+      }
+    }
+    document.querySelectorAll(".edit-mode-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-action") === "raise");
+    });
+    const resultIds = ["train-result", "spot-drill-result", "pot-odds-result"];
+    resultIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el)
+        el.style.display = "none";
+    });
+    document.querySelectorAll(".train-only-nav").forEach((el) => {
+      el.style.display = "none";
+    });
+    document.querySelectorAll(".view-panel").forEach((panel) => {
+      panel.style.display = "none";
+      panel.classList.remove("active");
+    });
+    if (editorView) {
+      editorView.style.display = "block";
+      editorView.classList.add("active");
+    }
+    const helpText = document.getElementById("practice-help-text");
+    if (helpText) {
+      helpText.textContent = "Load a range from the Library tab, then choose a training mode below.";
+      helpText.style.fontStyle = "italic";
+      helpText.style.color = "";
+    }
+    document.querySelectorAll(".nav-tab").forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-tab") === "editor");
+    });
+    document.querySelectorAll(".nav-tab-content").forEach((c) => {
+      c.classList.toggle("active", c.getAttribute("data-tab-content") === "editor");
+    });
+    const navBar = document.getElementById("nav-bar");
+    const navBackdrop = document.getElementById("nav-backdrop");
+    const mobileNavToggle = document.getElementById("mobile-nav-toggle");
+    if (navBar)
+      navBar.classList.remove("mobile-open");
+    if (navBackdrop)
+      navBackdrop.classList.remove("show");
+    document.body.style.overflow = "";
+    if (mobileNavToggle) {
+      const hamburgerIcon = mobileNavToggle.querySelector(".hamburger-icon");
+      const closeIcon = mobileNavToggle.querySelector(".close-icon");
+      if (hamburgerIcon)
+        hamburgerIcon.style.display = "block";
+      if (closeIcon)
+        closeIcon.style.display = "none";
+    }
+    const rangeNameInput = document.getElementById("range-name-input");
+    if (rangeNameInput) {
+      rangeNameInput.value = "";
+    }
+    if (grid)
+      grid.style.display = "grid";
+    updateStats();
+    showToast("App reset to default state", "success");
   }
 
   // src/constants.ts
@@ -346,120 +546,6 @@
       const handState = handsState.get(hand);
       if (handState && action !== "fold") {
         setHandAction(hand, action);
-      }
-    });
-  }
-
-  // src/ui.ts
-  function showToast(message, type) {
-    const container = document.getElementById("toast-container");
-    if (!container)
-      return;
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => {
-      toast.classList.add("show");
-    }, 10);
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        container.removeChild(toast);
-      }, 300);
-    }, 2e3);
-  }
-  function showConfirm(message) {
-    return new Promise((resolve) => {
-      const overlay = document.createElement("div");
-      overlay.className = "confirm-modal-overlay";
-      const modal = document.createElement("div");
-      modal.className = "confirm-modal";
-      const messageDiv = document.createElement("div");
-      messageDiv.className = "confirm-message";
-      messageDiv.textContent = message;
-      const buttonsDiv = document.createElement("div");
-      buttonsDiv.className = "confirm-buttons";
-      const confirmBtn = document.createElement("button");
-      confirmBtn.className = "confirm-btn confirm-btn-ok";
-      confirmBtn.textContent = "OK";
-      confirmBtn.addEventListener("click", () => {
-        document.body.removeChild(overlay);
-        resolve(true);
-      });
-      const cancelBtn = document.createElement("button");
-      cancelBtn.className = "confirm-btn confirm-btn-cancel";
-      cancelBtn.textContent = "Cancel";
-      cancelBtn.addEventListener("click", () => {
-        document.body.removeChild(overlay);
-        resolve(false);
-      });
-      buttonsDiv.appendChild(confirmBtn);
-      buttonsDiv.appendChild(cancelBtn);
-      modal.appendChild(messageDiv);
-      modal.appendChild(buttonsDiv);
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-      setTimeout(() => {
-        overlay.classList.add("show");
-      }, 10);
-      const handleEscape = (e) => {
-        if (e.key === "Escape") {
-          document.body.removeChild(overlay);
-          document.removeEventListener("keydown", handleEscape);
-          resolve(false);
-        }
-      };
-      document.addEventListener("keydown", handleEscape);
-    });
-  }
-  function setupMobileNavigation() {
-    const mobileNavToggle = document.getElementById("mobile-nav-toggle");
-    const navBar = document.getElementById("nav-bar");
-    const navBackdrop = document.getElementById("nav-backdrop");
-    const hamburgerIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".hamburger-icon");
-    const closeIcon = mobileNavToggle == null ? void 0 : mobileNavToggle.querySelector(".close-icon");
-    if (!mobileNavToggle || !navBar || !navBackdrop)
-      return;
-    function openNav() {
-      navBar.classList.add("mobile-open");
-      navBackdrop.classList.add("show");
-      if (hamburgerIcon)
-        hamburgerIcon.style.display = "none";
-      if (closeIcon)
-        closeIcon.style.display = "block";
-      document.body.style.overflow = "hidden";
-    }
-    function closeNav() {
-      navBar.classList.remove("mobile-open");
-      navBackdrop.classList.remove("show");
-      if (hamburgerIcon)
-        hamburgerIcon.style.display = "block";
-      if (closeIcon)
-        closeIcon.style.display = "none";
-      document.body.style.overflow = "";
-    }
-    mobileNavToggle.addEventListener("click", () => {
-      if (navBar.classList.contains("mobile-open")) {
-        closeNav();
-      } else {
-        openNav();
-      }
-    });
-    navBackdrop.addEventListener("click", () => {
-      closeNav();
-    });
-    const navButtons = navBar.querySelectorAll(".nav-button, .preset-button, .mode-toggle-btn");
-    navButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        setTimeout(() => {
-          closeNav();
-        }, 300);
-      });
-    });
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 768) {
-        closeNav();
       }
     });
   }
@@ -1483,6 +1569,18 @@
     if (resetBtn) {
       resetBtn.addEventListener("click", resetAll);
     }
+    const navBrand = document.querySelector(".nav-brand");
+    if (navBrand) {
+      navBrand.addEventListener("click", (e) => {
+        resetAppToInitialState();
+      });
+      navBrand.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          resetAppToInitialState();
+        }
+      });
+    }
     const selectAllBtn = document.getElementById("select-all-btn");
     if (selectAllBtn) {
       selectAllBtn.addEventListener("click", selectAll);
@@ -1576,4 +1674,5 @@
   } else {
     init();
   }
+  window.resetAppToInitialState = resetAppToInitialState;
 })();
