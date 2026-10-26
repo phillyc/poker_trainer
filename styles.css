@@ -73,6 +73,7 @@ button {
     padding: var(--space-6) var(--space-5);
     border-bottom: 1px solid var(--outline-variant);
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .nav-brand-icon {
