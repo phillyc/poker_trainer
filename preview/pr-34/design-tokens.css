@@ -1,0 +1,237 @@
+/* Poker Trainer Design Tokens */
+/* Based on Stitch export - Grandmaster Studio theme */
+
+:root {
+  /* === PRIMARY COLORS === */
+  --primary: #ddc39c;
+  --on-primary: #3e2e12;
+  --primary-container: #534124;
+  --on-primary-container: #c7ae89;
+  --primary-fixed: #fadfb7;
+  --primary-fixed-dim: #ddc39c;
+  --on-primary-fixed: #271902;
+  --on-primary-fixed-variant: #564427;
+
+  /* === SURFACE COLORS === */
+  --surface: #121416;
+  --surface-dim: #121416;
+  --surface-bright: #37393b;
+  --surface-container-lowest: #0c0e10;
+  --surface-container-low: #1a1c1e;
+  --surface-container: #1e2022;
+  --surface-container-high: #282a2c;
+  --surface-container-highest: #333537;
+  --surface-variant: #333537;
+
+  /* === TEXT COLORS === */
+  --on-surface: #e2e2e5;
+  --on-surface-variant: #c1c8c3;
+  --on-background: #e2e2e5;
+  --background: #121416;
+  --outline: #8b928e;
+  --outline-variant: #424844;
+  --inverse-surface: #e2e2e5;
+  --inverse-on-surface: #2f3133;
+  --inverse-primary: #6f5b3c;
+
+  /* === ACTION COLORS === */
+  --action-raise: #7c3a3a;         /* Muted burgundy for raise */
+  --action-call: #5a7a6c;          /* Sage green for call */
+  --action-fold: #1a1c1e;          /* Neutral dark for fold */
+  --action-mix-bg: linear-gradient(135deg, #7c3a3a 50%, #5a7a6c 50%);
+
+  /* === SECONDARY COLORS === */
+  --secondary: #adcebe;
+  --on-secondary: #19362b;
+  --secondary-container: #304d40;
+  --on-secondary-container: #9cbcad;
+  --secondary-fixed: #c9ead9;
+  --secondary-fixed-dim: #adcebe;
+  --on-secondary-fixed: #022016;
+  --on-secondary-fixed-variant: #304d40;
+
+  /* === TERTIARY COLORS === */
+  --tertiary: #ffb3b5;
+  --on-tertiary: #680018;
+  --tertiary-container: #8a0b26;
+  --on-tertiary-container: #ff9298;
+  --tertiary-fixed: #ffdada;
+  --tertiary-fixed-dim: #ffb3b5;
+  --on-tertiary-fixed: #40000b;
+  --on-tertiary-fixed-variant: #8e0f28;
+
+  /* === ERROR COLORS === */
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+
+  /* === SURFACE TINT === */
+  --surface-tint: #ddc39c;
+
+  /* === TYPOGRAPHY === */
+  --font-headline: 'Noto Serif', serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-label: 'Manrope', sans-serif;
+
+  /* Font Sizes */
+  --text-xs: 0.625rem;      /* 10px */
+  --text-sm: 0.75rem;       /* 12px */
+  --text-base: 0.875rem;    /* 14px */
+  --text-lg: 1.125rem;      /* 18px */
+  --text-xl: 1.25rem;       /* 20px */
+  --text-2xl: 1.5rem;       /* 24px */
+  --text-3xl: 1.875rem;     /* 30px */
+  --text-4xl: 2.25rem;      /* 36px */
+  --text-5xl: 3rem;         /* 48px */
+
+  /* Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-black: 900;
+
+  /* === SPACING === */
+  --space-0: 0;
+  --space-1: 0.25rem;       /* 4px */
+  --space-2: 0.5rem;        /* 8px */
+  --space-3: 0.75rem;       /* 12px */
+  --space-4: 1rem;          /* 16px */
+  --space-5: 1.25rem;       /* 20px */
+  --space-6: 1.5rem;        /* 24px */
+  --space-8: 2rem;          /* 32px */
+  --space-10: 2.5rem;       /* 40px */
+  --space-12: 3rem;         /* 48px */
+  --space-16: 4rem;         /* 64px */
+  --space-20: 5rem;         /* 80px */
+  --space-24: 6rem;         /* 96px */
+
+  /* === BORDER RADIUS === */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;    /* 2px */
+  --radius: 0.25rem;        /* 4px */
+  --radius-md: 0.375rem;    /* 6px */
+  --radius-lg: 0.75rem;     /* 12px */
+  --radius-xl: 1rem;        /* 16px */
+  --radius-full: 9999px;
+
+  /* === SHADOWS === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Custom shadows for poker app */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-grid-cell: 0 0 15px rgba(221, 195, 156, 0.1);
+
+  /* === TRANSITIONS === */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* === Z-INDEX === */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+
+  /* === LAYOUT === */
+  --sidebar-width: 16rem;     /* 256px */
+  --header-height: 4rem;      /* 64px */
+  --content-max-width: 75rem; /* 1200px */
+
+  /* === GRID === */
+  --grid-cols: 13;
+  --grid-gap: 1px;
+  --grid-gap-md: 2px;
+  --cell-min-size: 2rem;      /* 32px minimum cell size */
+}
+
+/* === UTILITY CLASSES === */
+
+/* Typography Utilities */
+.font-headline { font-family: var(--font-headline); }
+.font-body { font-family: var(--font-body); }
+.font-label { font-family: var(--font-label); }
+
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+.text-4xl { font-size: var(--text-4xl); }
+.text-5xl { font-size: var(--text-5xl); }
+
+.font-light { font-weight: var(--font-light); }
+.font-normal { font-weight: var(--font-normal); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+.font-black { font-weight: var(--font-black); }
+
+.uppercase { text-transform: uppercase; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-normal { letter-spacing: 0; }
+.tracking-wide { letter-spacing: 0.025em; }
+.tracking-wider { letter-spacing: 0.05em; }
+.tracking-widest { letter-spacing: 0.1em; }
+
+/* Color Utilities */
+.text-primary { color: var(--primary); }
+.text-on-surface { color: var(--on-surface); }
+.text-on-surface-variant { color: var(--on-surface-variant); }
+
+.bg-surface { background-color: var(--surface); }
+.bg-surface-container { background-color: var(--surface-container); }
+.bg-surface-container-high { background-color: var(--surface-container-high); }
+.bg-primary { background-color: var(--primary); }
+.bg-primary-container { background-color: var(--primary-container); }
+
+/* Spacing Utilities */
+.p-0 { padding: var(--space-0); }
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-6 { padding: var(--space-6); }
+.p-8 { padding: var(--space-8); }
+
+.m-0 { margin: var(--space-0); }
+.m-1 { margin: var(--space-1); }
+.m-2 { margin: var(--space-2); }
+.m-3 { margin: var(--space-3); }
+.m-4 { margin: var(--space-4); }
+.m-6 { margin: var(--space-6); }
+.m-8 { margin: var(--space-8); }
+
+/* Border Radius Utilities */
+.rounded-none { border-radius: var(--radius-none); }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded { border-radius: var(--radius); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+/* Shadow Utilities */
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow { box-shadow: var(--shadow); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+.shadow-2xl { box-shadow: var(--shadow-2xl); }
+
+/* Transition Utilities */
+.transition-fast { transition: all var(--transition-fast); }
+.transition { transition: all var(--transition-normal); }
+.transition-slow { transition: all var(--transition-slow); }
