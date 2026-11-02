@@ -1,6 +1,6 @@
 {
-  "HH EP Open": {
-    "name": "HH EP Open",
+  "EP Open": {
+    "name": "EP Open",
     "description": "Hungry Horse Early Position Open",
     "position": "EP",
     "hands": {
@@ -8,8 +8,8 @@
     }
   },
   "hh-hj-open": {
-    "name": "HH HJ Open",
-    "description": "Custom range: HH HJ Open",
+    "name": "HJ Open",
+    "description": "Custom range: HJ Open",
     "position": "HJ",
     "hands": {
       "raise": [
@@ -68,8 +68,8 @@
     }
   },
   "hh-btn-open": {
-    "name": "HH Btn Open",
-    "description": "Custom range: HH Btn Open",
+    "name": "Btn Open",
+    "description": "Custom range: Btn Open",
     "position": "Button",
     "hands": {
       "raise": [
@@ -171,8 +171,8 @@
       "mix-rc": []
     }
   },
-  "HH Btn v Aggro Open": {
-    "name": "HH Btn v Aggro Open",
+  "Btn v Aggro Open": {
+    "name": "Btn v Aggro Open",
     "description": "Hungry Horse Button vs Aggressive Open",
     "position": "Button",
     "hands": {
@@ -182,8 +182,8 @@
     }
   },
   "hh-btn-v-limp": {
-    "name": "HH Btn v Limp",
-    "description": "HH Btn v Limp",
+    "name": "Btn v Limp",
+    "description": "Btn v Limp",
     "hands": {
       "raise": [
         "66",
@@ -252,8 +252,8 @@
     }
   },
   "hh-hj-vs-open": {
-    "name": "HH HJ 3bet v Open",
-    "description": "HH HJ 3bet v Open",
+    "name": "HJ 3bet v Open",
+    "description": "HJ 3bet v Open",
     "hands": {
       "raise": [
         "99",
@@ -286,8 +286,8 @@
     }
   },
   "hh-btn-v-aggro-open": {
-    "name": "HH Btn v Aggro Open",
-    "description": "HH Btn v Aggro Open",
+    "name": "Btn v Aggro Open",
+    "description": "Btn v Aggro Open",
     "hands": {
       "raise": [
         "77",
